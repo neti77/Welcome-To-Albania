@@ -87,12 +87,12 @@ export default function Home() {
           <div className="absolute inset-0 bg-black/40" />
         </div>
         
-        <div className="z-10 text-center px-4 flex flex-col items-center">
+        <div className="z-10 text-center px-4 flex flex-col items-center mt-32">
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold tracking-tight mb-8 drop-shadow-lg"
+            className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold tracking-tight mb-6 drop-shadow-lg"
           >
             Welcome to <span className="text-primary">Albania</span>
           </motion.h1>
@@ -103,8 +103,8 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.4 }}
           >
             <Button 
-              size="lg" 
-              className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-lg font-medium transition-all shadow-lg hover:shadow-primary/50"
+              size="md" 
+              className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-4 text-base font-medium transition-all shadow-lg hover:shadow-primary/50"
               onClick={scrollToExplore}
               data-testid="button-start-journey"
             >
@@ -170,10 +170,15 @@ export default function Home() {
 
           {/* Right: Map (Larger part) */}
           <div className="w-full lg:w-2/3 relative flex flex-col items-center">
-            <div className="relative w-full max-w-[600px] aspect-[4/5] bg-secondary/20 rounded-[2rem] border border-border/30 shadow-2xl overflow-hidden flex items-center justify-center">
-              {/* Actual Map Path of Albania */}
-              <svg viewBox="0 0 400 600" className="absolute inset-0 w-full h-full text-secondary/40 p-10" fill="currentColor">
-                <path d="M185 35 C170 45, 155 40, 140 55 C125 70, 135 90, 130 110 C125 130, 100 145, 95 165 C90 185, 105 205, 100 225 C95 245, 80 260, 85 285 C90 310, 110 330, 115 355 C120 380, 110 405, 120 430 C130 455, 155 460, 180 470 C205 480, 230 500, 255 495 C280 490, 300 460, 315 440 C330 420, 335 390, 330 365 C325 340, 310 320, 320 295 C330 270, 345 245, 340 220 C335 195, 315 180, 310 155 C305 130, 320 100, 305 80 C290 60, 260 55, 240 45 C220 35, 200 25, 185 35 Z" />
+            <div className="relative w-full max-w-[600px] aspect-[4/5] flex items-center justify-center">
+              {/* Detailed Outline Map of Albania with Cities Sectioned */}
+              <svg viewBox="0 0 400 600" className="w-full h-full text-primary/20 drop-shadow-[0_0_15px_rgba(226,20,52,0.1)]" fill="none" stroke="currentColor" strokeWidth="1.5">
+                {/* Simplified SVG Map with section lines */}
+                <path d="M185 35 C170 45, 155 40, 140 55 C125 70, 135 90, 130 110 C125 130, 100 145, 95 165 C90 185, 105 205, 100 225 C95 245, 80 260, 85 285 C90 310, 110 330, 115 355 C120 380, 110 405, 120 430 C130 455, 155 460, 180 470 C205 480, 230 500, 255 495 C280 490, 300 460, 315 440 C330 420, 335 390, 330 365 C325 340, 310 320, 320 295 C330 270, 345 245, 340 220 C335 195, 315 180, 310 155 C305 130, 320 100, 305 80 C290 60, 260 55, 240 45 C220 35, 200 25, 185 35 Z" stroke="currentColor" strokeWidth="2" />
+                
+                {/* Internal sectioning lines (Simplified regions) */}
+                <path d="M130 110 L180 140 M100 225 L160 210 M115 355 L200 340 M180 470 L240 430" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 4" />
+                <path d="M190 35 L190 150 M250 150 L200 280 M150 310 L280 360" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 2" />
               </svg>
 
               {/* Map Points */}
