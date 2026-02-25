@@ -103,7 +103,7 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.4 }}
           >
             <Button 
-              size="md" 
+              size="default" 
               className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-4 text-base font-medium transition-all shadow-lg hover:shadow-primary/50"
               onClick={scrollToExplore}
               data-testid="button-start-journey"
