@@ -34,34 +34,33 @@
 }
 
 :root {
-  /* Warm terracotta red/orange for the flag, creamy whites for background */
-  --background: 40 33% 98%;
-  --foreground: 20 14% 4%;
+  /* Dark theme for lower sections */
+  --background: 20 14% 4%;
+  --foreground: 40 33% 98%;
   
-  --card: 0 0% 100%;
-  --card-foreground: 20 14% 4%;
+  --card: 24 10% 10%;
+  --card-foreground: 40 33% 98%;
   
-  --popover: 0 0% 100%;
-  --popover-foreground: 20 14% 4%;
+  --popover: 24 10% 10%;
+  --popover-foreground: 40 33% 98%;
   
-  /* Albanian Red */
   --primary: 348 83% 47%;
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 40 20% 90%;
-  --secondary-foreground: 20 14% 4%;
+  --secondary: 24 10% 15%;
+  --secondary-foreground: 40 33% 98%;
   
-  --muted: 40 20% 90%;
-  --muted-foreground: 25 5% 45%;
+  --muted: 24 10% 15%;
+  --muted-foreground: 40 20% 70%;
   
   --accent: 348 83% 47%;
   --accent-foreground: 0 0% 100%;
   
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-
-  --border: 40 20% 85%;
-  --input: 40 20% 85%;
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 40 33% 98%;
+  
+  --border: 24 10% 15%;
+  --input: 24 10% 15%;
   --ring: 348 83% 47%;
   
   --radius: 0.75rem;

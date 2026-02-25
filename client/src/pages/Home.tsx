@@ -80,36 +80,27 @@ export default function Home() {
       <section className="relative h-screen w-full overflow-hidden flex flex-col items-center justify-center text-white">
         <div className="absolute inset-0 z-0">
           <img 
-            src="/src/assets/images/header-tirana.jpg" 
+            src="/src/assets/images/header-tirana-new.jpg" 
             alt="Tirana Skyline" 
-            className="w-full h-full object-cover brightness-[0.7]"
+            className="w-full h-full object-cover brightness-[0.6]"
           />
-          <div className="absolute inset-0 bg-black/30 bg-gradient-to-b from-transparent to-black/60" />
+          <div className="absolute inset-0 bg-black/40" />
         </div>
         
-        <div className="z-10 text-center px-4 flex flex-col items-center mt-20">
+        <div className="z-10 text-center px-4 flex flex-col items-center">
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-6xl md:text-8xl lg:text-9xl font-serif font-bold tracking-tight mb-6 drop-shadow-lg"
+            className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold tracking-tight mb-8 drop-shadow-lg"
           >
             Welcome to <span className="text-primary">Albania</span>
           </motion.h1>
           
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-xl md:text-2xl font-light mb-12 max-w-2xl text-gray-200"
-          >
-            Discover the hidden gem of the Balkans. A land of untamed nature, rich history, and warm hospitality.
-          </motion.p>
-          
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
           >
             <Button 
               size="lg" 
@@ -127,67 +118,62 @@ export default function Home() {
           onClick={scrollToExplore}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1.5 }}
+          transition={{ duration: 1, delay: 1.0 }}
         >
           <ArrowDown className="w-8 h-8 text-white/80" />
         </motion.div>
       </section>
 
       {/* Explore Section */}
-      <section id="explore" className="py-24 px-4 md:px-8 lg:px-16 max-w-7xl mx-auto w-full">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">Explore Destinations</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto text-lg">Click on the map to discover the unique charm of each Albanian city.</p>
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-12 items-center">
+      <section id="explore" className="py-24 px-4 md:px-8 lg:px-16 w-full bg-background">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 items-start">
           
-          {/* Left: City Info */}
-          <div className="w-full lg:w-1/2 flex flex-col justify-center min-h-[500px]">
+          {/* Left: City Info (Smaller part) */}
+          <div className="w-full lg:w-1/3 flex flex-col justify-start">
+            <div className="mb-8">
+              <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4">Destinations</h2>
+              <p className="text-muted-foreground text-base">Select a city on the map to explore.</p>
+            </div>
+
             <AnimatePresence mode="wait">
               <motion.div
                 key={selectedCity.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.5 }}
-                className="bg-card rounded-3xl overflow-hidden shadow-xl border border-border"
+                transition={{ duration: 0.4 }}
+                className="bg-card rounded-2xl overflow-hidden shadow-2xl border border-border"
               >
-                <div className="h-64 sm:h-80 relative overflow-hidden">
+                <div className="h-48 sm:h-56 relative overflow-hidden">
                   <img 
                     src={selectedCity.image} 
                     alt={selectedCity.name} 
-                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                    className="w-full h-full object-cover"
                     data-testid={`img-city-${selectedCity.id}`}
                   />
-                  <div className="absolute top-4 left-4 bg-background/80 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    <span className="font-medium text-sm">Albania</span>
-                  </div>
                 </div>
                 
-                <div className="p-8">
-                  <h3 className="text-3xl font-serif font-bold text-foreground mb-4" data-testid={`text-city-name-${selectedCity.id}`}>
+                <div className="p-6">
+                  <h3 className="text-2xl font-serif font-bold text-foreground mb-3" data-testid={`text-city-name-${selectedCity.id}`}>
                     {selectedCity.name}
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed text-lg mb-6" data-testid={`text-city-desc-${selectedCity.id}`}>
+                  <p className="text-muted-foreground leading-relaxed text-sm mb-6" data-testid={`text-city-desc-${selectedCity.id}`}>
                     {selectedCity.description}
                   </p>
-                  <Button variant="outline" className="rounded-full px-6" data-testid={`button-plan-${selectedCity.id}`}>
-                    Plan a Trip
+                  <Button variant="outline" size="sm" className="rounded-full px-5" data-testid={`button-plan-${selectedCity.id}`}>
+                    Plan Trip
                   </Button>
                 </div>
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {/* Right: Map */}
-          <div className="w-full lg:w-1/2 relative flex justify-center py-10">
-            <div className="relative w-full max-w-[400px] aspect-[3/4] bg-secondary/30 rounded-[3rem] border border-border/50 shadow-inner overflow-hidden flex items-center justify-center">
-              
-              {/* Abstract Map Shape representation */}
-              <svg viewBox="0 0 400 500" className="absolute inset-0 w-full h-full text-secondary drop-shadow-md" fill="currentColor">
-                <path d="M190 40 C230 45, 245 80, 260 120 C280 150, 300 170, 320 210 C330 260, 310 300, 290 350 C270 390, 280 430, 260 460 C240 485, 210 475, 190 450 C160 410, 140 360, 150 310 C130 260, 90 220, 80 180 C70 130, 110 90, 140 60 Z" />
+          {/* Right: Map (Larger part) */}
+          <div className="w-full lg:w-2/3 relative flex flex-col items-center">
+            <div className="relative w-full max-w-[600px] aspect-[4/5] bg-secondary/20 rounded-[2rem] border border-border/30 shadow-2xl overflow-hidden flex items-center justify-center">
+              {/* Actual Map Path of Albania */}
+              <svg viewBox="0 0 400 600" className="absolute inset-0 w-full h-full text-secondary/40 p-10" fill="currentColor">
+                <path d="M185 35 C170 45, 155 40, 140 55 C125 70, 135 90, 130 110 C125 130, 100 145, 95 165 C90 185, 105 205, 100 225 C95 245, 80 260, 85 285 C90 310, 110 330, 115 355 C120 380, 110 405, 120 430 C130 455, 155 460, 180 470 C205 480, 230 500, 255 495 C280 490, 300 460, 315 440 C330 420, 335 390, 330 365 C325 340, 310 320, 320 295 C330 270, 345 245, 340 220 C335 195, 315 180, 310 155 C305 130, 320 100, 305 80 C290 60, 260 55, 240 45 C220 35, 200 25, 185 35 Z" />
               </svg>
 
               {/* Map Points */}
@@ -202,11 +188,6 @@ export default function Home() {
                   <span className="map-point-label">{city.name}</span>
                 </div>
               ))}
-
-              <div className="absolute bottom-6 right-6 text-sm text-muted-foreground flex items-center gap-2 bg-background/80 px-3 py-1.5 rounded-full backdrop-blur-sm">
-                <MapPin className="w-3 h-3" />
-                Select a destination
-              </div>
             </div>
           </div>
           
