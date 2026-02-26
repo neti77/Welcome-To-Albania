@@ -1,52 +1,10 @@
-import { useState, useEffect } from "react"; // Added useEffect here
+import { useState, useEffect, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowDown, Sun, Compass, Camera, Landmark } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { fetchWeatherApi } from "openmeteo";
-// City Data
-const CITIES = [
-  {
-    id: "shkoder",
-    name: "Shkodër",
-    description: "One of the oldest and most historic places in Albania, Shkodër is a cultural center featuring the legendary Rozafa Castle.",
-    image: "/src/assets/images/city-shkoder.jpg",
-    position: { top: "14%", left: "42%" },
-    lat: 42.0675, lon: 19.5141, 
-  },
-  {
-    id: "tirana",
-    name: "Tirana",
-    description: "The vibrant capital city of Albania, known for its colorful architecture and lively atmosphere.",
-    image: "/src/assets/images/city-tirana.jpg",
-    position: { top: "38%", left: "52%" },
-    lat: 41.3275, lon: 19.8187,
-  },
-  {
-    id: "berat",
-    name: "Berat",
-    description: "Known as the 'City of a Thousand Windows', Berat is a UNESCO World Heritage site with a well-preserved Ottoman center.",
-    image: "/src/assets/images/city-berat.jpg",
-    position: { top: "58%", left: "54%" },
-    lat: 40.7086, lon: 19.9520,
-  },
-  {
-    id: "vlore",
-    name: "Vlorë",
-    description: "Where the Adriatic meets the Ionian Sea. Vlorë is famous for its beautiful riviera and stunning beaches.",
-    image: "/src/assets/images/city-vlore.jpg",
-    position: { top: "70%", left: "35%" },
-    lat: 40.4661, lon: 19.4914,
-  },
-  {
-    id: "gjirokaster",
-    name: "Gjirokastër",
-    description: "A magical 'City of Stone' with steep cobblestone streets and a massive fortress.",
-    image: "/src/assets/images/city-gjirokaster.jpg",
-    position: { top: "84%", left: "60%" },
-    lat: 40.0758, lon: 20.1389,
-  }
-];
+import { CITIES } from "@/data/cities";
 
 const GUIDES = [
   { title: "Albanian Riviera", icon: Sun, description: "Crystal clear waters from Vlorë to Ksamil." },
@@ -55,17 +13,64 @@ const GUIDES = [
   { title: "Cultural Heritage", icon: Camera, description: "Experience the unique 'Besa' hospitality." }
 ];
 
+const NAV_ITEMS = [
+  { label: "For Albanians", href: "/for-albanians" },
+  { label: "For Visitors", href: "/for-visitors" },
+  { label: "What's New", href: "/whats-new" },
+  { label: "Plan Your Trip", href: "/plan-your-trip" },
+];
+
+const GASTRONOMY = [
+  {
+    title: "Tavë Kosi",
+    description: "Baked lamb and yogurt dish from Elbasan, one of Albania's signature foods.",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Tav%C3%AB_kosi.jpg",
+    source: "https://commons.wikimedia.org/wiki/File:Tav%C3%AB_kosi.jpg",
+  },
+  {
+    title: "Fërgesë",
+    description: "Traditional mix of peppers, tomatoes, onions, and cheese, often served warm with bread.",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Fergese-albanian-dish.jpg",
+    source: "https://commons.wikimedia.org/wiki/File:Fergese-albanian-dish.jpg",
+  },
+  {
+    title: "Byrek",
+    description: "Flaky layered pastry with savory fillings, a staple in Albanian homes and bakeries.",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Albanian_triangle_byrek.jpg",
+    source: "https://commons.wikimedia.org/wiki/File:Albanian_triangle_byrek.jpg",
+  },
+];
+
+const PLAN_VISIT_STEPS = [
+  "Pick your route: coast, mountains, or a mixed trip.",
+  "Choose your city bases and day trips.",
+  "Lock in local food spots and sunset viewpoints.",
+];
+
+const VINTAGE_GALLERY = [
+  "/src/assets/images/header-tirana.jpg",
+  "/src/assets/images/city-shkoder.jpg",
+  "/src/assets/images/city-berat.jpg",
+];
+
+const IN_VIEW = { once: true, amount: 0.25 } as const;
+
 export default function Home() {
   const [selectedCity, setSelectedCity] = useState(CITIES[1]);
   const [weather, setWeather] = useState<{ temp: number; symbol: string } | null>(null);
+  const [showNavButtons, setShowNavButtons] = useState(true);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterMessage, setNewsletterMessage] = useState("");
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
+  const [, navigate] = useLocation();
 
   // Weather Fetch Logic
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        const response = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${selectedCity.lat}&longitude=${selectedCity.lon}&current_weather=true`
-        );
+       const response = await fetch(
+  `https://api.open-meteo.com/v1/forecast?latitude=${selectedCity.lat}&longitude=${selectedCity.lon}&current=temperature_2m,weather_code&current_weather=true`
+);
         const data = await response.json();
         
         const code = data.current_weather.weathercode;
@@ -88,8 +93,51 @@ export default function Home() {
     fetchWeather();
   }, [selectedCity]);
 
+  useEffect(() => {
+    const onScroll = () => {
+      setShowNavButtons(window.scrollY < 20);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const scrollToExplore = () => {
     document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const onNewsletterSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const email = newsletterEmail.trim();
+    if (!email) {
+      setNewsletterMessage("Please enter your email.");
+      return;
+    }
+
+    setNewsletterSubmitting(true);
+    setNewsletterMessage("");
+
+    try {
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        setNewsletterMessage("Could not subscribe right now. Please try again.");
+        return;
+      }
+
+      setNewsletterMessage("Thanks for joining. You're on the list.");
+      setNewsletterEmail("");
+    } catch {
+      setNewsletterMessage("Could not subscribe right now. Please try again.");
+    } finally {
+      setNewsletterSubmitting(false);
+    }
   };
 
   return (
@@ -104,6 +152,45 @@ export default function Home() {
             className="w-full h-full object-cover brightness-[0.6]"
           />
           <div className="absolute inset-0 bg-black/40" />
+        </div>
+
+        <div
+          className={`absolute top-5 left-4 md:left-8 lg:left-16 z-20 transition-all duration-300 ${
+            showNavButtons ? "translate-x-0 opacity-100" : "-translate-x-[120%] opacity-0 pointer-events-none"
+          }`}
+        >
+          <nav className="flex items-center gap-2 md:gap-3 text-xs md:text-sm lg:text-base overflow-x-auto whitespace-nowrap">
+              {NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-white/90 hover:text-white transition-colors border border-white/35 bg-black/35 backdrop-blur-md rounded-full px-4 py-2"
+                >
+                  {item.label}
+                </Link>
+              ))}
+          </nav>
+        </div>
+
+        <div
+          className={`absolute top-5 right-4 md:right-8 lg:right-16 z-20 transition-all duration-300 ${
+            showNavButtons ? "translate-x-0 opacity-100" : "translate-x-[120%] opacity-0 pointer-events-none"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Link
+              href="/sign-in"
+              className="text-white/90 hover:text-white transition-colors border border-white/35 bg-black/35 backdrop-blur-md rounded-full px-4 py-2 text-xs md:text-sm"
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/sign-up"
+              className="text-white/90 hover:text-white transition-colors border border-white/35 bg-black/35 backdrop-blur-md rounded-full px-4 py-2 text-xs md:text-sm"
+            >
+              Sign Up
+            </Link>
+          </div>
         </div>
         
         <div className="z-10 text-center px-4 flex flex-col items-center mt-32">
@@ -126,11 +213,11 @@ export default function Home() {
 
       {/* Explore Section */}
       <section id="explore" className="py-24 px-4 md:px-8 lg:px-16 w-full bg-background">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12 items-center">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12 lg:gap-8 items-center lg:items-start">
           
           {/* Left: City Info Card */}
-          <div className="w-full lg:w-1/3">
-            <h2 className="text-3xl font-serif font-bold mb-6 text-foreground">Destinations</h2>
+          <div className="w-full lg:w-[42%]">
+            <h2 className="text-4xl font-serif font-bold mb-7 text-foreground">Destinations</h2>
             <AnimatePresence mode="wait">
               <motion.div
                 key={selectedCity.id}
@@ -139,45 +226,71 @@ export default function Home() {
                 exit={{ opacity: 0, x: 20 }}
                 className="bg-card rounded-2xl overflow-hidden shadow-xl border border-border relative"
               >
-                <img src={selectedCity.image} className="h-48 w-full object-cover" alt={selectedCity.name} />
+                <img src={selectedCity.image} className="h-60 md:h-72 w-full object-cover" alt={selectedCity.name} />
                 
                 {/* Weather Badge - This is where the weather shows up! */}
                {weather ? (
-  <div className="...">...</div>
+                <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center gap-2 text-sm">
+                  <span>{weather.symbol}</span>
+                  <span>{weather.temp}°C</span>
+                </div>
 ) : (
   <div className="absolute top-4 right-4 text-white">Loading...</div>
 )}
 
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold mb-2 text-foreground">{selectedCity.name}</h3>
-                  <p className="text-muted-foreground mb-4">{selectedCity.description}</p>
-                  <Button variant="outline">Plan Trip</Button>
+                <div className="p-7">
+                  <h3 className="text-3xl font-bold mb-3 text-foreground">{selectedCity.name}</h3>
+                  <p className="text-base text-muted-foreground mb-5">{selectedCity.description}</p>
+                  <Button
+                    variant="outline"
+                    className="px-6 py-5 text-base"
+                    onClick={() => navigate(`/city/${selectedCity.id}`)}
+                  >
+                    Explore
+                  </Button>
                 </div>
               </motion.div>
             </AnimatePresence>
           </div>
 
           {/* Right: Map */}
-          <div className="w-full lg:w-2/3 relative flex justify-center items-center min-h-[600px]">
-            <div className="relative w-full max-w-[400px] aspect-[1/2]">
+          <div className="w-full lg:w-[58%] relative flex justify-center lg:justify-center items-center min-h-[520px]">
+            <div className="relative w-full max-w-[300px] lg:max-w-[300px] aspect-[1/2] lg:-translate-x-2">
               <svg viewBox="0 0 100 200" className="w-full h-full drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]" fill="none">
-                <motion.path
-                  d="M52.3,2.4 C54.5,1.2 59.8,3.5 62.1,6.8 C64.4,10.1 63.2,16.7 65.8,20.4 C68.4,24.1 76.5,26.7 78.4,32.4 C80.3,38.1 77.2,46.8 79.5,53.2 C81.8,59.6 89.2,65.4 90.5,72.4 C91.8,79.4 88.4,89.5 89.2,98.5 C90,107.5 94.2,115.6 92.5,123.4 C90.8,131.2 84.5,138.4 83.4,147.2 C82.3,156 84.5,165.4 81.2,172.5 C77.9,179.6 70.4,185.3 62.4,188.4 C54.4,191.5 45.6,189.2 38.4,184.2 C31.2,179.2 28.4,170.1 26.5,160.4 C24.6,150.7 20.2,142.1 18.4,132.5 C16.6,122.9 19.5,112.4 16.4,103.2 C13.3,94 6.5,86.4 5.2,78.2 C3.9,70 10.2,62.1 13.4,54.2 C16.6,46.3 14.2,36.5 18.5,28.4 C22.8,20.3 30.2,15.4 38.4,10.2 C46.6,5 50.1,3.6 52.3,2.4 Z"
-                  stroke="white"
-                  strokeWidth="1"
-                  fill="rgba(255,255,255,0.05)"
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 3 }}
-                />
+               <motion.path
+  d="
+   M300 40
+            C360 60 420 120 430 190
+            C440 260 420 320 450 380
+            C480 440 470 520 430 580
+            C390 640 360 700 370 760
+            C380 830 340 900 290 940
+            C250 970 210 950 200 910
+            C185 860 200 820 180 770
+            C150 700 130 650 140 590
+            C150 530 120 470 130 410
+            C140 350 170 300 190 250
+            C210 200 230 150 250 110
+            C270 70 290 50 300 40
+            Z
+  "
+  stroke="white"
+  strokeWidth="1.2"
+  fill="rgba(255,255,255,0.05)"
+  initial={{ pathLength: 0 }}
+  whileInView={{ pathLength: 1 }}
+  viewport={IN_VIEW}
+  transition={{ duration: 2.4 }}
+/>
               </svg>
 
-              {CITIES.map((city) => (
+              {CITIES.map((city, index) => (
                 <motion.button
                   key={city.id}
                   initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 3.2 }}
+                  whileInView={{ scale: 1, opacity: 1 }}
+                  viewport={IN_VIEW}
+                  transition={{ delay: index * 0.07, duration: 0.4 }}
                   onClick={() => setSelectedCity(city)}
                   className="absolute z-20 group -translate-x-1/2 -translate-y-1/2"
                   style={{ top: city.position.top, left: city.position.left }}
@@ -200,24 +313,211 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Travel Guide Section */}
-      <section className="py-24 px-4 bg-secondary/30">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {GUIDES.map((guide) => (
-            <Card key={guide.title} className="border-none shadow-sm">
-              <CardContent className="p-6 text-center">
-                <guide.icon className="w-10 h-10 mx-auto mb-4 text-primary" />
-                <h4 className="font-bold mb-2">{guide.title}</h4>
-                <p className="text-sm text-muted-foreground">{guide.description}</p>
-              </CardContent>
-            </Card>
-          ))}
+      <section className="py-24 px-4 md:px-8 lg:px-16 bg-background">
+        <div className="max-w-7xl mx-auto">
+          <motion.h2
+            className="text-3xl md:text-4xl font-serif font-bold mb-3"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={IN_VIEW}
+          >
+            Gastronomy
+          </motion.h2>
+          <motion.p
+            className="text-muted-foreground mb-8 max-w-3xl"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={IN_VIEW}
+            transition={{ delay: 0.08 }}
+          >
+            A taste of traditional Albanian food culture, from classic home dishes to bakery staples.
+          </motion.p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {GASTRONOMY.map((dish, index) => (
+              <motion.div
+                key={dish.title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={IN_VIEW}
+                transition={{ delay: index * 0.1 }}
+              >
+              <Card className="overflow-hidden">
+                <img src={dish.image} alt={dish.title} className="h-52 w-full object-cover" />
+                <CardContent className="p-5">
+                  <h3 className="text-xl font-semibold mb-2">{dish.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">{dish.description}</p>
+                  <a
+                    href={dish.source}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-primary underline underline-offset-2"
+                  >
+                    Image source: Wikimedia Commons
+                  </a>
+                </CardContent>
+              </Card>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-foreground text-background py-12 text-center">
-        <p className="text-sm">© {new Date().getFullYear()} Visit Albania. Go your own way.</p>
+      <section className="py-24 px-4 bg-secondary/30">
+        <div className="max-w-7xl mx-auto">
+          <motion.h2
+            className="text-3xl md:text-4xl font-serif font-bold mb-8"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={IN_VIEW}
+          >
+            KNOWN FOR
+          </motion.h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {GUIDES.map((guide, index) => (
+              <motion.div
+                key={guide.title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={IN_VIEW}
+                transition={{ delay: index * 0.08 }}
+              >
+              <Card className="border-none shadow-sm">
+                <CardContent className="p-6 text-center">
+                  <guide.icon className="w-10 h-10 mx-auto mb-4 text-primary" />
+                  <h4 className="font-bold mb-2">{guide.title}</h4>
+                  <p className="text-sm text-muted-foreground">{guide.description}</p>
+                </CardContent>
+              </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-24 px-4 md:px-8 lg:px-16 bg-background">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-10">Plan Your Visit</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+            <div className="relative pl-10">
+              <motion.div
+                className="absolute left-2 top-1 w-[2px] bg-primary/70 origin-top"
+                initial={{ scaleY: 0 }}
+                whileInView={{ scaleY: 1 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 1.2, ease: "easeOut" }}
+                style={{ height: "220px" }}
+              />
+              <div className="space-y-8">
+                {PLAN_VISIT_STEPS.map((step, index) => (
+                  <motion.div
+                    key={step}
+                    className="relative"
+                    initial={{ opacity: 0, x: -16 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={IN_VIEW}
+                    transition={{ delay: index * 0.12 }}
+                  >
+                    <span className="absolute -left-10 top-1 w-4 h-4 rounded-full bg-primary/80 border border-primary/30" />
+                    <p className="text-base md:text-lg">{index + 1}. {step}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            <div className="relative h-[360px]">
+              {VINTAGE_GALLERY.map((image, index) => (
+                <motion.img
+                  key={image}
+                  src={image}
+                  alt={`Albania travel memory ${index + 1}`}
+                  className="absolute w-[68%] h-[48%] object-cover rounded-md border border-white/20 shadow-xl"
+                  style={{
+                    top: `${index * 22}%`,
+                    left: `${index * 13}%`,
+                    filter: "grayscale(0.55) sepia(0.35) contrast(1.05)",
+                    transform: `rotate(${index === 1 ? "-4deg" : index === 2 ? "3deg" : "-1deg"})`,
+                  }}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.5, delay: index * 0.15 }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="bg-[#0a0a0a] text-white pt-16 pb-8 px-4 md:px-16 border-t border-white/5">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+          <div className="col-span-1 md:col-span-1">
+            <h2 className="text-2xl font-serif font-bold mb-4">
+              Visit <span className="text-primary">Albania</span>
+            </h2>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Helping you discover the last hidden corner of Europe. From the Accursed Mountains to the turquoise Ionian shores.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-bold mb-4 uppercase text-xs tracking-widest text-primary">Explore</h4>
+            <ul className="space-y-2 text-sm text-gray-400">
+              <li className="hover:text-white transition-colors cursor-pointer">The Riviera</li>
+              <li className="hover:text-white transition-colors cursor-pointer">Mountain Trails</li>
+              <li className="hover:text-white transition-colors cursor-pointer">Local Cuisine</li>
+            </ul>
+            <h4 className="font-bold mt-6 mb-3 uppercase text-xs tracking-widest text-primary">Admin</h4>
+            <ul className="space-y-2 text-sm text-gray-400">
+              <li>
+                <Link href="/admin/newsletter" className="hover:text-white transition-colors">
+                  Newsletter Dashboard
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-bold mb-4 uppercase text-xs tracking-widest text-primary">Live Status</h4>
+            <div className="text-sm text-gray-400">
+              <p>Tirana Time: {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+              <p>Local Temp: {weather?.temp ?? "--"}°C</p>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-bold mb-4 uppercase text-xs tracking-widest text-primary">Get Updates</h4>
+            <form className="space-y-2" onSubmit={onNewsletterSubmit}>
+              <div className="flex gap-2">
+              <input
+                type="email"
+                placeholder="Email address"
+                value={newsletterEmail}
+                onChange={(event) => setNewsletterEmail(event.target.value)}
+                className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-primary"
+              />
+              <Button
+                type="submit"
+                size="sm"
+                disabled={newsletterSubmitting}
+                className="bg-primary hover:bg-primary/90"
+              >
+                Join
+              </Button>
+            </div>
+              {newsletterMessage && (
+                <p className="text-xs text-gray-400">{newsletterMessage}</p>
+              )}
+            </form>
+          </div>
+        </div>
+
+        <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-gray-500 uppercase tracking-widest">
+          <p>© {new Date().getFullYear()} Visit Albania. All rights reserved.</p>
+          <div className="flex gap-6">
+            <span className="hover:text-white cursor-pointer">Privacy Policy</span>
+            <span className="hover:text-white cursor-pointer">Terms of Service</span>
+          </div>
+        </div>
       </footer>
     </div>
   );

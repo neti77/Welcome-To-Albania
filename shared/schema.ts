@@ -16,3 +16,17 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export const insertNewsletterSubscriberSchema = z.object({
+  email: z.string().trim().email(),
+});
+
+export type InsertNewsletterSubscriber = z.infer<
+  typeof insertNewsletterSubscriberSchema
+>;
+
+export type NewsletterSubscriber = {
+  id: string;
+  email: string;
+  createdAt: string;
+};
