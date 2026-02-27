@@ -16,3 +16,35 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export const insertNewsletterSubscriberSchema = z.object({
+  email: z.string().trim().email(),
+});
+
+export type InsertNewsletterSubscriber = z.infer<
+  typeof insertNewsletterSubscriberSchema
+>;
+
+export type NewsletterSubscriber = {
+  id: string;
+  email: string;
+  createdAt: string;
+};
+
+export const insertNewsletterInboxItemSchema = z.object({
+  subject: z.string().trim().min(3).max(180),
+  content: z.string().trim().min(10).max(20000),
+});
+
+export type InsertNewsletterInboxItem = z.infer<
+  typeof insertNewsletterInboxItemSchema
+>;
+
+export type NewsletterInboxItem = {
+  id: string;
+  subject: string;
+  content: string;
+  status: "draft" | "sent";
+  createdAt: string;
+  sentAt: string | null;
+};

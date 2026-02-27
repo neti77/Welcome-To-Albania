@@ -1,0 +1,20 @@
+[
+  {
+    "id": "3465dbdb-e3d3-4510-9662-8b563ce07bc0",
+    "emailHash": "973dfe463ec85785f5f95af5ba3906eedb2d931c24e69824a89ea65dba4e813b",
+    "emailEncrypted": "ea8df0849b69517920a7ffd8:6fe663d8f724e036c44da7774d0b165d:7699f572f42c05c5acf06033f986a0af",
+    "createdAt": "2026-02-26T18:30:16.105Z"
+  },
+  {
+    "id": "31744327-1183-4d0a-aa29-90fdfae5f835",
+    "emailHash": "12d741c93e497aad6d7139047fc06e62092ee430482779c80ada11a4647c4d3f",
+    "emailEncrypted": "3103b23d2f813d645a994c9e:3b3735d79185941cb98edec5129c0e31:b57dee9c696bffbec2ef6db75f0b43759c49cdd72bcc771827f9",
+    "createdAt": "2026-02-26T18:30:28.692Z"
+  },
+  {
+    "id": "4bb9a931-43a4-4dfe-ae45-3ed8ab4dd940",
+    "emailHash": "5e64eeb294498cf2de24c2788e5bb9d8587a8f2d0e588654c97efed8b4653f37",
+    "emailEncrypted": "e1337b4069cc6b4571e669e4:e9d03b5d601bbacff1081bd070d04a0e:3ccd6d881176fdb6613648a0e07646",
+    "createdAt": "2026-02-26T18:33:28.116Z"
+  }
+]
