@@ -2,49 +2,165 @@ import { Link, useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const PAGE_CONTENT: Record<
-  string,
-  { title: string; subtitle: string; points: string[]; futureNote: string }
-> = {
+type Article = {
+  title: string;
+  excerpt: string;
+  url: string;
+  source: string;
+  image: string;
+};
+
+type PageContent = {
+  title: string;
+  subtitle: string;
+  quickGuide: string[];
+  articles: Article[];
+};
+
+const PAGE_CONTENT: Record<string, PageContent> = {
   "/for-albanians": {
     title: "For Albanians",
-    subtitle: "Local resources, national events, and tools for everyday travel and discovery inside Albania.",
-    points: [
-      "Weekend ideas by region and season",
-      "Community highlights and local initiatives",
-      "Domestic travel updates and practical tips",
+    subtitle:
+      "Practical local inspiration: short trips, seasonal ideas, and destination refreshers across the country.",
+    quickGuide: [
+      "2-day escapes: coast, mountain, and heritage versions",
+      "Shoulder-season picks for fewer crowds and better prices",
+      "Weekend route templates from Tirana, Shkodër, and Korçë",
     ],
-    futureNote: "Future direction: open community blog submissions from Albanian writers and creators.",
+    articles: [
+      {
+        title: "UNESCO Sites in Albania",
+        excerpt:
+          "A concise reference for heritage destinations you can build weekend routes around.",
+        url: "https://whc.unesco.org/en/statesparties/al",
+        source: "UNESCO World Heritage Centre",
+        image: "/src/assets/images/city-berat.jpg",
+      },
+      {
+        title: "Albania Official Tourism",
+        excerpt:
+          "Useful for regional updates, destination highlights, and official event information.",
+        url: "https://albania.al/",
+        source: "Official Albania Tourism",
+        image: "/src/assets/images/header-tirana-new.jpg",
+      },
+      {
+        title: "Responsible Mountain Travel",
+        excerpt:
+          "Trail and mountain etiquette principles that help preserve highland routes for everyone.",
+        url: "https://lnt.org/why/7-principles/",
+        source: "Leave No Trace",
+        image: "/src/assets/images/city-shkoder.jpg",
+      },
+    ],
   },
   "/for-visitors": {
     title: "For Visitors",
-    subtitle: "A practical starter guide for first-time travelers to Albania.",
-    points: [
-      "What to pack and when to visit",
-      "City-to-city route suggestions",
-      "Culture and etiquette basics for a smooth trip",
+    subtitle:
+      "A clean starting point for first-time travelers: entry basics, safety, logistics, and route planning.",
+    quickGuide: [
+      "First-timer sequence: Tirana -> heritage -> coast or Alps",
+      "How many days to allocate by region",
+      "What to expect with roads, timing, and transit",
     ],
-    futureNote: "Future direction: visitor stories and curated travel blogs from recent guests.",
+    articles: [
+      {
+        title: "Albania Travel Advice",
+        excerpt:
+          "Current official guidance on safety, practicalities, and common travel considerations.",
+        url: "https://travel.state.gov/content/travel/en/international-travel/International-Travel-Country-Information-Pages/Albania.html",
+        source: "U.S. Department of State",
+        image: "/src/assets/images/city-tirana.jpg",
+      },
+      {
+        title: "IATA Travel Centre",
+        excerpt:
+          "Entry and transit requirement checks before departure.",
+        url: "https://www.iatatravelcentre.com/",
+        source: "IATA",
+        image: "/src/assets/images/header-tirana.jpg",
+      },
+      {
+        title: "OpenStreetMap Albania",
+        excerpt:
+          "A reliable map base to inspect roads, terrain, and route alternatives.",
+        url: "https://www.openstreetmap.org/relation/53292",
+        source: "OpenStreetMap",
+        image: "/src/assets/images/city-vlore.jpg",
+      },
+    ],
   },
   "/whats-new": {
     title: "What's New",
-    subtitle: "Latest additions, destination updates, and new features in the platform.",
-    points: [
-      "New city spotlights and refreshed guides",
-      "Upcoming events and seasonal recommendations",
-      "Platform improvements and roadmap snapshots",
+    subtitle:
+      "Fresh platform updates and timely travel context so returning visitors always find something new.",
+    quickGuide: [
+      "Recently added city pages and map refinements",
+      "Upcoming content: blog stories + curated route drops",
+      "Roadmap focus: practical travel tools over filler content",
     ],
-    futureNote: "Future direction: timeline-based blog feed with editor and community posts.",
+    articles: [
+      {
+        title: "Open-Meteo Docs",
+        excerpt:
+          "The weather source behind destination cards, useful if you want to understand forecast data quality.",
+        url: "https://open-meteo.com/en/docs",
+        source: "Open-Meteo",
+        image: "/src/assets/images/city-tirana.jpg",
+      },
+      {
+        title: "geoBoundaries Project",
+        excerpt:
+          "Boundary-data reference used for accurate country geometry and mapping quality.",
+        url: "https://www.geoboundaries.org/",
+        source: "geoBoundaries",
+        image: "/src/assets/images/city-shkoder.jpg",
+      },
+      {
+        title: "Wikimedia Commons Albania",
+        excerpt:
+          "A broad media source for historical imagery and destination references.",
+        url: "https://commons.wikimedia.org/wiki/Category:Albania",
+        source: "Wikimedia Commons",
+        image: "/src/assets/images/city-berat.jpg",
+      },
+    ],
   },
   "/plan-your-trip": {
     title: "Plan Your Trip",
-    subtitle: "Build your Albania itinerary with city picks, timing ideas, and route logic.",
-    points: [
-      "Trip planner suggestions by length (3, 5, 7+ days)",
-      "Mountain, culture, and coastline route mixes",
-      "Checklist for transport, stays, and day plans",
+    subtitle:
+      "Turn ideas into a real itinerary with practical timing, route logic, and destination tradeoffs.",
+    quickGuide: [
+      "3-day, 5-day, and 8-day route templates",
+      "Coast-vs-mountain pacing guide",
+      "Pack, transport, and day-structure checklist",
     ],
-    futureNote: "Future direction: personalized planner plus travel blog recommendations by destination.",
+    articles: [
+      {
+        title: "Rome2Rio Route Planning",
+        excerpt:
+          "Quickly compare transport routes and transfer options between key destinations.",
+        url: "https://www.rome2rio.com/",
+        source: "Rome2Rio",
+        image: "/src/assets/images/city-durres.jpg",
+      },
+      {
+        title: "Meteoblue Climate Explorer",
+        excerpt:
+          "Useful for month-by-month weather patterns when picking travel windows.",
+        url: "https://www.meteoblue.com/en/weather/historyclimate/climatemodelled/",
+        source: "Meteoblue",
+        image: "/src/assets/images/city-gjirokaster.jpg",
+      },
+      {
+        title: "UNESCO Albania Map",
+        excerpt:
+          "Anchor your itinerary around heritage locations for a stronger culture-focused trip.",
+        url: "https://whc.unesco.org/en/statesparties/al",
+        source: "UNESCO",
+        image: "/src/assets/images/city-berat.jpg",
+      },
+    ],
   },
 };
 
@@ -65,26 +181,57 @@ export default function HubPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 md:px-8 lg:px-16 py-14">
-        <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">{content.title}</h1>
-        <p className="text-lg text-muted-foreground max-w-3xl mb-10">{content.subtitle}</p>
+      <main className="max-w-6xl mx-auto px-4 md:px-8 lg:px-16 py-14 space-y-10">
+        <section>
+          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+            {content.title}
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-3xl">{content.subtitle}</p>
+        </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {content.points.map((point) => (
-            <Card key={point}>
-              <CardContent className="p-6">
-                <p className="text-sm leading-relaxed">{point}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">Quick Guide</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {content.quickGuide.map((point) => (
+              <Card key={point}>
+                <CardContent className="p-6">
+                  <p className="text-sm leading-relaxed">{point}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
 
-        <Card className="border-primary/40 bg-secondary/30">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-semibold mb-2">Future Blog Direction</h2>
-            <p className="text-muted-foreground">{content.futureNote}</p>
-          </CardContent>
-        </Card>
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">Short Reads</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {content.articles.map((article) => (
+              <Card
+                key={article.title}
+                className="border-primary/20 overflow-hidden transition-transform duration-300 hover:-translate-y-1"
+              >
+                <img
+                  src={article.image}
+                  alt={article.title}
+                  className="h-40 w-full object-cover"
+                />
+                <CardContent className="p-5 space-y-3">
+                  <h3 className="text-lg font-semibold leading-snug">{article.title}</h3>
+                  <p className="text-sm text-muted-foreground">{article.excerpt}</p>
+                  <p className="text-xs uppercase tracking-wider text-primary">{article.source}</p>
+                  <a
+                    href={article.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm underline underline-offset-2"
+                  >
+                    Read source
+                  </a>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
       </main>
     </div>
   );

@@ -79,6 +79,26 @@ export const CITIES: City[] = [
     lat: 41.3236,
     lon: 19.4544,
   },
+  {
+    id: "korce",
+    name: "Korçë",
+    description:
+      "Known for its elegant old villas, cultural festivals, and nearby mountain landscapes, Korçë is one of Albania's most charming southeastern cities.",
+    image: "/src/assets/images/city-berat.jpg",
+    position: { top: "78%", left: "72%" },
+    lat: 40.6167,
+    lon: 20.7833,
+  },
+  {
+    id: "tropoje",
+    name: "Tropojë",
+    description:
+      "A gateway to dramatic alpine valleys and the Valbona region, Tropojë is a top destination for mountain trekking and nature escapes.",
+    image: "/src/assets/images/city-shkoder.jpg",
+    position: { top: "9%", left: "63%" },
+    lat: 42.3573,
+    lon: 20.0768,
+  },
 ];
 
 export const CITY_DETAILS: Record<
@@ -166,5 +186,27 @@ export const CITY_DETAILS: Record<
       "Quick access from Tirana for a short coastal escape",
     ],
     localTip: "Visit the amphitheater early, then spend late afternoon by the sea promenade.",
+  },
+  korce: {
+    tagline: "Cultural jewel of the southeast",
+    intro:
+      "Korçë blends refined architecture, winter charm, and a strong arts scene. It is one of Albania's most atmospheric cities for slow travel and local culture.",
+    highlights: [
+      "Old Bazaar quarter and restored cobbled streets",
+      "Orthodox cathedral and cultural museums",
+      "Mountain access toward Dardhë and nearby nature escapes",
+    ],
+    localTip: "Visit in the evening when the central pedestrian area comes alive with cafes and music.",
+  },
+  tropoje: {
+    tagline: "Alpine gateway to Valbona",
+    intro:
+      "Tropojë is one of northern Albania's adventure hubs, surrounded by dramatic peaks and connected to iconic hiking routes.",
+    highlights: [
+      "Valbona valley entry and mountain trekking routes",
+      "Scenic drives through rugged alpine landscapes",
+      "Traditional guesthouses and local mountain cuisine",
+    ],
+    localTip: "Book mountain stays early in peak summer, especially if you're planning the Valbona-Theth trail.",
   },
 };

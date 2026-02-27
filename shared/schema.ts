@@ -30,3 +30,21 @@ export type NewsletterSubscriber = {
   email: string;
   createdAt: string;
 };
+
+export const insertNewsletterInboxItemSchema = z.object({
+  subject: z.string().trim().min(3).max(180),
+  content: z.string().trim().min(10).max(20000),
+});
+
+export type InsertNewsletterInboxItem = z.infer<
+  typeof insertNewsletterInboxItemSchema
+>;
+
+export type NewsletterInboxItem = {
+  id: string;
+  subject: string;
+  content: string;
+  status: "draft" | "sent";
+  createdAt: string;
+  sentAt: string | null;
+};

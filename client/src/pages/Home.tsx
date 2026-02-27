@@ -5,6 +5,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CITIES } from "@/data/cities";
+import { ALBANIA_MAP_PATH, projectAlbaniaPoint } from "@/data/albaniaMap";
 
 const GUIDES = [
   { title: "Albanian Riviera", icon: Sun, description: "Crystal clear waters from Vlorë to Ksamil." },
@@ -255,59 +256,66 @@ export default function Home() {
 
           {/* Right: Map */}
           <div className="w-full lg:w-[58%] relative flex justify-center lg:justify-center items-center min-h-[520px]">
-            <div className="relative w-full max-w-[300px] lg:max-w-[300px] aspect-[1/2] lg:-translate-x-2">
-              <svg viewBox="0 0 100 200" className="w-full h-full drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]" fill="none">
-               <motion.path
-  d="
-   M300 40
-            C360 60 420 120 430 190
-            C440 260 420 320 450 380
-            C480 440 470 520 430 580
-            C390 640 360 700 370 760
-            C380 830 340 900 290 940
-            C250 970 210 950 200 910
-            C185 860 200 820 180 770
-            C150 700 130 650 140 590
-            C150 530 120 470 130 410
-            C140 350 170 300 190 250
-            C210 200 230 150 250 110
-            C270 70 290 50 300 40
-            Z
-  "
-  stroke="white"
-  strokeWidth="1.2"
-  fill="rgba(255,255,255,0.05)"
-  initial={{ pathLength: 0 }}
-  whileInView={{ pathLength: 1 }}
-  viewport={IN_VIEW}
-  transition={{ duration: 2.4 }}
-/>
-              </svg>
+            <div className="relative w-full max-w-[300px] lg:max-w-[300px] aspect-[1/2] lg:translate-x-2">
+              <div className="relative w-full h-full overflow-hidden rounded-xl">
+                <div className="relative w-full h-full">
+                  <svg
+                    viewBox="0 0 100 200"
+                    className="w-full h-full pointer-events-none drop-shadow-[0_0_16px_rgba(255,255,255,0.22)]"
+                    fill="none"
+                  >
+                    <motion.path
+                      d={ALBANIA_MAP_PATH}
+                      stroke="hsl(var(--foreground))"
+                      strokeWidth="0.95"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      whileInView={{ pathLength: 1, opacity: 0.9 }}
+                      viewport={IN_VIEW}
+                      transition={{ duration: 2.3, ease: "easeInOut" }}
+                    />
+                  </svg>
 
-              {CITIES.map((city, index) => (
-                <motion.button
-                  key={city.id}
-                  initial={{ scale: 0, opacity: 0 }}
-                  whileInView={{ scale: 1, opacity: 1 }}
-                  viewport={IN_VIEW}
-                  transition={{ delay: index * 0.07, duration: 0.4 }}
-                  onClick={() => setSelectedCity(city)}
-                  className="absolute z-20 group -translate-x-1/2 -translate-y-1/2"
-                  style={{ top: city.position.top, left: city.position.left }}
-                >
-                  <div className="relative flex items-center justify-center">
-                    <div className={`w-3 h-3 rounded-full border border-white transition-all duration-300 ${
-                      selectedCity.id === city.id ? 'bg-red-500 scale-150 shadow-[0_0_10px_red]' : 'bg-red-600'
-                    }`} />
-                    {selectedCity.id === city.id && (
-                      <div className="absolute w-6 h-6 bg-red-500/30 rounded-full animate-ping" />
-                    )}
-                  </div>
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    {city.name}
-                  </span>
-                </motion.button>
-              ))}
+                  {CITIES.map((city, index) => {
+                    const projected = projectAlbaniaPoint(city.lat, city.lon);
+                    const isSelected = selectedCity.id === city.id;
+                    return (
+                    <motion.button
+                      key={city.id}
+                      initial={{ scale: 0, opacity: 0 }}
+                      whileInView={{ scale: 1, opacity: 1 }}
+                      viewport={IN_VIEW}
+                      transition={{ delay: index * 0.07, duration: 0.4 }}
+                      onClick={() => setSelectedCity(city)}
+                      className="absolute z-20 group -translate-x-1/2 -translate-y-1/2"
+                      style={{
+                        top: projected.top,
+                        left: projected.left,
+                      }}
+                    >
+                      <div className="relative flex items-center justify-center">
+                        <div className={`w-3 h-3 rounded-full border border-white transition-all duration-300 ${
+                          isSelected ? "bg-red-500 scale-150 shadow-[0_0_10px_red]" : "bg-red-600"
+                        }`} />
+                        {isSelected && (
+                          <div className="absolute w-6 h-6 bg-red-500/30 rounded-full animate-ping" />
+                        )}
+                      </div>
+                      <span
+                        className={`absolute left-[14px] top-1/2 -translate-y-1/2 h-px bg-white/70 transition-all duration-300 ${
+                          isSelected ? "w-3 opacity-100" : "w-0 opacity-0 group-hover:w-3 group-hover:opacity-100"
+                        }`}
+                      />
+                      <span className={`absolute left-7 top-1/2 -translate-y-1/2 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[10px] transition-opacity whitespace-nowrap ${
+                        isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      }`}>
+                        {city.name}
+                      </span>
+                    </motion.button>
+                  )})}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -342,7 +350,14 @@ export default function Home() {
                 transition={{ delay: index * 0.1 }}
               >
               <Card className="overflow-hidden">
-                <img src={dish.image} alt={dish.title} className="h-52 w-full object-cover" />
+                <img
+                  src={dish.image}
+                  alt={dish.title}
+                  className="h-52 w-full object-cover"
+                  onError={(event) => {
+                    event.currentTarget.src = "/src/assets/images/header-tirana-new.jpg";
+                  }}
+                />
                 <CardContent className="p-5">
                   <h3 className="text-xl font-semibold mb-2">{dish.title}</h3>
                   <p className="text-sm text-muted-foreground mb-3">{dish.description}</p>
@@ -469,8 +484,8 @@ export default function Home() {
             <h4 className="font-bold mt-6 mb-3 uppercase text-xs tracking-widest text-primary">Admin</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
-                <Link href="/admin/newsletter" className="hover:text-white transition-colors">
-                  Newsletter Dashboard
+                <Link href="/admin/login" className="hover:text-white transition-colors">
+                  Admin
                 </Link>
               </li>
             </ul>

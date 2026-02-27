@@ -1,7 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertNewsletterSubscriberSchema } from "@shared/schema";
+import {
+  insertNewsletterSubscriberSchema,
+  insertNewsletterInboxItemSchema,
+} from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -9,6 +12,35 @@ export async function registerRoutes(
 ): Promise<Server> {
   // put application routes here
   // prefix all routes with /api
+
+  const requireAdminToken = (providedToken?: string) => {
+    const configuredToken = process.env.ADMIN_DASHBOARD_TOKEN;
+    if (!configuredToken) {
+      return { ok: false as const, status: 503, message: "Admin dashboard is not configured." };
+    }
+
+    if (!providedToken || providedToken.trim() !== configuredToken) {
+      return { ok: false as const, status: 401, message: "Unauthorized." };
+    }
+
+    return { ok: true as const };
+  };
+
+  app.post("/api/admin/login", (req, res) => {
+    const configuredToken = process.env.ADMIN_DASHBOARD_TOKEN;
+    if (!configuredToken) {
+      return res.status(503).json({
+        message: "Admin dashboard is not configured.",
+      });
+    }
+
+    const providedToken = String(req.body?.token ?? "").trim();
+    if (!providedToken || providedToken !== configuredToken) {
+      return res.status(401).json({ message: "Invalid admin key." });
+    }
+
+    return res.status(200).json({ message: "Access granted." });
+  });
 
   app.post("/api/newsletter/subscribe", async (req, res, next) => {
     try {
@@ -44,25 +76,66 @@ export async function registerRoutes(
 
   app.get("/api/admin/newsletter/subscribers", async (req, res, next) => {
     try {
-      const configuredToken = process.env.ADMIN_DASHBOARD_TOKEN;
-      if (!configuredToken) {
-        return res.status(503).json({
-          message: "Admin dashboard is not configured.",
-        });
-      }
-
-      const providedToken = (req.headers["x-admin-token"] as string | undefined)
-        ?.trim();
-      if (!providedToken || providedToken !== configuredToken) {
-        return res.status(401).json({
-          message: "Unauthorized.",
-        });
-      }
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
 
       const subscribers = await storage.listNewsletterSubscribers();
       return res.status(200).json({
         count: subscribers.length,
         subscribers,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.get("/api/admin/newsletter/inbox", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const items = await storage.listNewsletterInboxItems();
+      return res.status(200).json({ count: items.length, items });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/admin/newsletter/inbox", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const parsed = insertNewsletterInboxItemSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Subject and content are required." });
+      }
+
+      const item = await storage.createNewsletterInboxItem(parsed.data);
+      return res.status(201).json({ message: "Draft created.", item });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/admin/newsletter/inbox/:id/send", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const item = await storage.markNewsletterInboxItemSent(req.params.id);
+      if (!item) {
+        return res.status(404).json({ message: "Newsletter draft not found." });
+      }
+
+      const subscribers = await storage.listNewsletterSubscribers();
+      const recipients = subscribers.map((subscriber) => subscriber.email);
+
+      return res.status(200).json({
+        message: "Newsletter marked as sent. Use recipient list for manual delivery.",
+        item,
+        recipientCount: recipients.length,
+        recipients,
       });
     } catch (error) {
       return next(error);

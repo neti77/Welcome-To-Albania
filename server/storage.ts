@@ -3,6 +3,8 @@ import {
   type InsertUser,
   type NewsletterSubscriber,
   type InsertNewsletterSubscriber,
+  type NewsletterInboxItem,
+  type InsertNewsletterInboxItem,
 } from "@shared/schema";
 import {
   randomUUID,
@@ -28,6 +30,11 @@ export interface IStorage {
     subscriber: InsertNewsletterSubscriber,
   ): Promise<NewsletterSubscriber>;
   listNewsletterSubscribers(): Promise<NewsletterSubscriber[]>;
+  createNewsletterInboxItem(
+    input: InsertNewsletterInboxItem,
+  ): Promise<NewsletterInboxItem>;
+  listNewsletterInboxItems(): Promise<NewsletterInboxItem[]>;
+  markNewsletterInboxItemSent(id: string): Promise<NewsletterInboxItem | null>;
 }
 
 type StoredNewsletterSubscriber = {
@@ -40,16 +47,25 @@ type StoredNewsletterSubscriber = {
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private newsletterSubscribers: Map<string, StoredNewsletterSubscriber>;
+  private newsletterInboxItems: Map<string, NewsletterInboxItem>;
   private newsletterLoaded: boolean;
+  private newsletterInboxLoaded: boolean;
   private newsletterFilePath: string;
+  private newsletterInboxFilePath: string;
 
   constructor() {
     this.users = new Map();
     this.newsletterSubscribers = new Map();
+    this.newsletterInboxItems = new Map();
     this.newsletterLoaded = false;
+    this.newsletterInboxLoaded = false;
     this.newsletterFilePath = path.resolve(
       process.cwd(),
       "server/data/newsletter-subscribers.secure.json",
+    );
+    this.newsletterInboxFilePath = path.resolve(
+      process.cwd(),
+      "server/data/newsletter-inbox.json",
     );
   }
 
@@ -150,6 +166,43 @@ export class MemStorage implements IStorage {
     await fs.writeFile(this.newsletterFilePath, data, "utf8");
   }
 
+  private async ensureNewsletterInboxLoaded() {
+    if (this.newsletterInboxLoaded) return;
+
+    await fs.mkdir(path.dirname(this.newsletterInboxFilePath), {
+      recursive: true,
+    });
+
+    try {
+      const raw = await fs.readFile(this.newsletterInboxFilePath, "utf8");
+      const parsed = JSON.parse(raw) as NewsletterInboxItem[];
+      for (const item of parsed) {
+        this.newsletterInboxItems.set(item.id, item);
+      }
+    } catch (error: unknown) {
+      const fileMissing =
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code?: string }).code === "ENOENT";
+
+      if (!fileMissing) throw error;
+      await this.persistNewsletterInboxItems();
+    }
+
+    this.newsletterInboxLoaded = true;
+  }
+
+  private async persistNewsletterInboxItems() {
+    const data = JSON.stringify(
+      Array.from(this.newsletterInboxItems.values()),
+      null,
+      2,
+    );
+
+    await fs.writeFile(this.newsletterInboxFilePath, data, "utf8");
+  }
+
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
   }
@@ -226,6 +279,52 @@ export class MemStorage implements IStorage {
         createdAt: subscriber.createdAt,
       }))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async createNewsletterInboxItem(
+    input: InsertNewsletterInboxItem,
+  ): Promise<NewsletterInboxItem> {
+    await this.ensureNewsletterInboxLoaded();
+
+    const item: NewsletterInboxItem = {
+      id: randomUUID(),
+      subject: input.subject.trim(),
+      content: input.content.trim(),
+      status: "draft",
+      createdAt: new Date().toISOString(),
+      sentAt: null,
+    };
+
+    this.newsletterInboxItems.set(item.id, item);
+    await this.persistNewsletterInboxItems();
+    return item;
+  }
+
+  async listNewsletterInboxItems(): Promise<NewsletterInboxItem[]> {
+    await this.ensureNewsletterInboxLoaded();
+    return Array.from(this.newsletterInboxItems.values()).sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
+  }
+
+  async markNewsletterInboxItemSent(
+    id: string,
+  ): Promise<NewsletterInboxItem | null> {
+    await this.ensureNewsletterInboxLoaded();
+    const existing = this.newsletterInboxItems.get(id);
+    if (!existing) return null;
+
+    if (existing.status === "sent") return existing;
+
+    const updated: NewsletterInboxItem = {
+      ...existing,
+      status: "sent",
+      sentAt: new Date().toISOString(),
+    };
+
+    this.newsletterInboxItems.set(updated.id, updated);
+    await this.persistNewsletterInboxItems();
+    return updated;
   }
 }
 

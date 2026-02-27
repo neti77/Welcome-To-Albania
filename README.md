@@ -26,3 +26,7 @@ Auth routes:
 
 - `/sign-in`
 - `/sign-up`
+
+Admin route:
+
+- `/admin/newsletter`

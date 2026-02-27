@@ -10,6 +10,7 @@ import HubPage from "@/pages/HubPage";
 import SignInPage from "@/pages/SignInPage";
 import SignUpPage from "@/pages/SignUpPage";
 import AdminNewsletterPage from "@/pages/AdminNewsletterPage";
+import AdminLoginPage from "@/pages/AdminLoginPage";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/plan-your-trip" component={HubPage} />
       <Route path="/sign-in" component={SignInPage} />
       <Route path="/sign-up" component={SignUpPage} />
+      <Route path="/admin/login" component={AdminLoginPage} />
       <Route path="/admin/newsletter" component={AdminNewsletterPage} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
