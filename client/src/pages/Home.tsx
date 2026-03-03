@@ -49,17 +49,24 @@ const PLAN_VISIT_STEPS = [
 ];
 
 const VINTAGE_GALLERY = [
-  "/src/assets/images/header-tirana.jpg",
+  "/src/assets/images/city-vlore.jpg",
   "/src/assets/images/city-shkoder.jpg",
   "/src/assets/images/city-berat.jpg",
 ];
 
 const IN_VIEW = { once: true, amount: 0.25 } as const;
+const HERO_SLIDES = Array.from(
+  new Set([
+    "/src/assets/images/header-tirana-new.jpg",
+    ...CITIES.map((city) => city.image),
+  ]),
+);
 
 export default function Home() {
   const [selectedCity, setSelectedCity] = useState(CITIES[1]);
   const [weather, setWeather] = useState<{ temp: number; symbol: string } | null>(null);
   const [showNavButtons, setShowNavButtons] = useState(true);
+  const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterMessage, setNewsletterMessage] = useState("");
   const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
@@ -104,8 +111,8 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scrollToExplore = () => {
-    document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" });
+  const cycleHeroBackground = () => {
+    setHeroSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
   };
 
   const onNewsletterSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -147,16 +154,56 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative h-screen w-full overflow-hidden flex flex-col items-center justify-center text-white">
         <div className="absolute inset-0 z-0">
-          <img 
-            src="/src/assets/images/header-tirana-new.jpg" 
-            alt="Tirana Skyline" 
-            className="w-full h-full object-cover brightness-[0.6]"
-          />
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={HERO_SLIDES[heroSlideIndex]}
+              src={HERO_SLIDES[heroSlideIndex]}
+              alt="Albania destination slideshow"
+              className="w-full h-full object-cover brightness-[0.6]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.9, ease: "easeInOut" }}
+            />
+          </AnimatePresence>
           <div className="absolute inset-0 bg-black/40" />
         </div>
 
         <div
-          className={`absolute top-5 left-4 md:left-8 lg:left-16 z-20 transition-all duration-300 ${
+          className={`absolute top-5 left-4 right-4 z-20 transition-all duration-300 md:hidden ${
+            showNavButtons ? "translate-x-0 opacity-100" : "-translate-x-[120%] opacity-0 pointer-events-none"
+          }`}
+        >
+          <nav
+            className="flex items-center gap-2 overflow-x-auto whitespace-nowrap rounded-full border border-white/35 bg-black/35 backdrop-blur-md px-3 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="shrink-0 text-white/90 hover:text-white transition-colors border border-white/25 rounded-full px-3 py-1.5 text-xs"
+              >
+                {item.label}
+              </Link>
+            ))}
+            <Link
+              href="/sign-in"
+              className="shrink-0 text-white/90 hover:text-white transition-colors border border-white/25 rounded-full px-3 py-1.5 text-xs"
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/sign-up"
+              className="shrink-0 text-white/90 hover:text-white transition-colors border border-white/25 rounded-full px-3 py-1.5 text-xs"
+            >
+              Sign Up
+            </Link>
+          </nav>
+        </div>
+
+        <div
+          className={`absolute top-5 left-4 md:left-8 lg:left-16 z-20 transition-all duration-300 hidden md:block ${
             showNavButtons ? "translate-x-0 opacity-100" : "-translate-x-[120%] opacity-0 pointer-events-none"
           }`}
         >
@@ -174,7 +221,7 @@ export default function Home() {
         </div>
 
         <div
-          className={`absolute top-5 right-4 md:right-8 lg:right-16 z-20 transition-all duration-300 ${
+          className={`absolute top-5 right-4 md:right-8 lg:right-16 z-20 transition-all duration-300 hidden md:block ${
             showNavButtons ? "translate-x-0 opacity-100" : "translate-x-[120%] opacity-0 pointer-events-none"
           }`}
         >
@@ -202,8 +249,8 @@ export default function Home() {
           >
             Welcome to <span className="text-primary">Albania</span>
           </motion.h1>
-          <Button onClick={scrollToExplore} className="bg-primary rounded-full px-8 py-6">
-            Start Your Journey
+          <Button onClick={cycleHeroBackground} className="bg-primary rounded-full px-8 py-6">
+            Explore
           </Button>
         </div>
 
@@ -481,8 +528,10 @@ export default function Home() {
               <li className="hover:text-white transition-colors cursor-pointer">Mountain Trails</li>
               <li className="hover:text-white transition-colors cursor-pointer">Local Cuisine</li>
             </ul>
-            <h4 className="font-bold mt-6 mb-3 uppercase text-xs tracking-widest text-primary">Admin</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
+            </div>
+            <div>
+            <h4 className="font-bold mt-6 mb-3 uppercase text-xs text-primary">Admin</h4>
+            <ul className="space-y-0 space-x-0 text-sm text-gray-400">
               <li>
                 <Link href="/admin/login" className="hover:text-white transition-colors">
                   Admin
@@ -490,7 +539,8 @@ export default function Home() {
               </li>
             </ul>
           </div>
-
+                  
+             
           <div>
             <h4 className="font-bold mb-4 uppercase text-xs tracking-widest text-primary">Live Status</h4>
             <div className="text-sm text-gray-400">
