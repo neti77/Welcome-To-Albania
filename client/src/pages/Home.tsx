@@ -70,6 +70,8 @@ export default function Home() {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterMessage, setNewsletterMessage] = useState("");
   const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
+  const [newsletterHoneypot, setNewsletterHoneypot] = useState("");
+  const [newsletterFormStartedAt] = useState(() => Date.now());
   const [, navigate] = useLocation();
 
   // Weather Fetch Logic
@@ -118,6 +120,17 @@ export default function Home() {
   const onNewsletterSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (newsletterHoneypot.trim()) {
+      setNewsletterMessage("Thanks for joining. You're on the list.");
+      return;
+    }
+
+    const submittedAfterMs = Date.now() - newsletterFormStartedAt;
+    if (submittedAfterMs < 1200) {
+      setNewsletterMessage("Could not subscribe right now. Please try again.");
+      return;
+    }
+
     const email = newsletterEmail.trim();
     if (!email) {
       setNewsletterMessage("Please enter your email.");
@@ -131,7 +144,11 @@ export default function Home() {
       const response = await fetch("/api/newsletter/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          website: newsletterHoneypot,
+          submittedAfterMs,
+        }),
       });
 
       if (!response.ok) {
@@ -522,15 +539,13 @@ export default function Home() {
           </div>
 
           <div>
-            <h4 className="font-bold mb-4 uppercase text-xs tracking-widest text-primary">Explore</h4>
+            <h4 className="font-bold mb-4 uppercase text-xs text-primary">Explore</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li className="hover:text-white transition-colors cursor-pointer">The Riviera</li>
               <li className="hover:text-white transition-colors cursor-pointer">Mountain Trails</li>
               <li className="hover:text-white transition-colors cursor-pointer">Local Cuisine</li>
             </ul>
-            </div>
-            <div>
-            <h4 className="font-bold mt-6 mb-3 uppercase text-xs text-primary">Admin</h4>
+              <h5 className="font-bold mt-6 mb-3 uppercase text-xs text-primary">Admin</h5>
             <ul className="space-y-0 space-x-0 text-sm text-gray-400">
               <li>
                 <Link href="/admin/login" className="hover:text-white transition-colors">
@@ -538,7 +553,9 @@ export default function Home() {
                 </Link>
               </li>
             </ul>
-          </div>
+            </div>
+          
+          
                   
              
           <div>
@@ -560,6 +577,15 @@ export default function Home() {
                 onChange={(event) => setNewsletterEmail(event.target.value)}
                 className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-primary"
               />
+              <input
+                type="text"
+                value={newsletterHoneypot}
+                onChange={(event) => setNewsletterHoneypot(event.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                className="hidden"
+                aria-hidden="true"
+              />
               <Button
                 type="submit"
                 size="sm"
@@ -579,8 +605,12 @@ export default function Home() {
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-gray-500 uppercase tracking-widest">
           <p>© {new Date().getFullYear()} Visit Albania. All rights reserved.</p>
           <div className="flex gap-6">
-            <span className="hover:text-white cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-white cursor-pointer">Terms of Service</span>
+            <Link href="/legal#privacy" className="hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/legal#terms" className="hover:text-white transition-colors">
+              Terms of Service
+            </Link>
           </div>
         </div>
       </footer>

@@ -14,7 +14,7 @@ export const CITIES: City[] = [
     name: "Shkodër",
     description:
       "One of the oldest and most historic places in Albania, Shkodër is a cultural center featuring the legendary Rozafa Castle.",
-    image: "/src/assets/images/city-shkoder.jpg",
+    image: "https://upload.wikimedia.org/wikipedia/commons/f/f8/The_City_and_the_Prokletije_from_the_castle.jpg",
     position: { top: "14%", left: "42%" },
     lat: 42.0675,
     lon: 19.5141,
@@ -54,7 +54,7 @@ export const CITIES: City[] = [
     name: "Gjirokastër",
     description:
       "A magical 'City of Stone' with steep cobblestone streets and a massive fortress.",
-    image: "/src/assets/images/city-gjirokaster.jpg",
+    image: "https://upload.wikimedia.org/wikipedia/commons/1/16/Gjirokaster_2016-2017.jpg",
     position: { top: "84%", left: "60%" },
     lat: 40.0758,
     lon: 20.1389,
@@ -64,7 +64,7 @@ export const CITIES: City[] = [
     name: "Kukës",
     description:
       "Located in the mountainous north, Kukës is known for its dramatic landscapes and the artificial lake Fierza.",
-    image: "/src/assets/images/header-tirana.jpg",
+    image: "https://euronews.al/en/wp-content/uploads/2024/02/kukes-albania.webp",
     position: { top: "20%", left: "75%" },
     lat: 42.0769,
     lon: 20.4217,
@@ -94,7 +94,7 @@ export const CITIES: City[] = [
     name: "Tropojë",
     description:
       "A gateway to dramatic alpine valleys and the Valbona region, Tropojë is a top destination for mountain trekking and nature escapes.",
-    image: "/src/assets/images/city-shkoder.jpg",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Valbona%20Village.jpg",
     position: { top: "9%", left: "63%" },
     lat: 42.3573,
     lon: 20.0768,

@@ -6,6 +6,8 @@ import {
   insertNewsletterInboxItemSchema,
 } from "@shared/schema";
 
+const newsletterRateLimit = new Map<string, number[]>();
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -44,6 +46,35 @@ export async function registerRoutes(
 
   app.post("/api/newsletter/subscribe", async (req, res, next) => {
     try {
+      const honeypot = String(req.body?.website ?? "").trim();
+      if (honeypot) {
+        return res.status(200).json({ message: "Subscription saved successfully." });
+      }
+
+      const submittedAfterMs = Number(req.body?.submittedAfterMs ?? 0);
+      if (!Number.isFinite(submittedAfterMs) || submittedAfterMs < 1200) {
+        return res.status(400).json({
+          message: "Please try again.",
+        });
+      }
+
+      const rawIp =
+        ((req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0] ??
+          req.ip ??
+          "unknown").trim();
+      const now = Date.now();
+      const windowMs = 10 * 60 * 1000;
+      const maxRequestsPerWindow = 6;
+      const existingRequests = newsletterRateLimit.get(rawIp) ?? [];
+      const recent = existingRequests.filter((ts) => now - ts < windowMs);
+      if (recent.length >= maxRequestsPerWindow) {
+        return res.status(429).json({
+          message: "Too many requests. Please try again later.",
+        });
+      }
+      recent.push(now);
+      newsletterRateLimit.set(rawIp, recent);
+
       const parsed = insertNewsletterSubscriberSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({

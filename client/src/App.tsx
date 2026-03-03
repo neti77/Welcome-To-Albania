@@ -11,6 +11,7 @@ import SignInPage from "@/pages/SignInPage";
 import SignUpPage from "@/pages/SignUpPage";
 import AdminNewsletterPage from "@/pages/AdminNewsletterPage";
 import AdminLoginPage from "@/pages/AdminLoginPage";
+import LegalPage from "@/pages/LegalPage";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/sign-up" component={SignUpPage} />
       <Route path="/admin/login" component={AdminLoginPage} />
       <Route path="/admin/newsletter" component={AdminNewsletterPage} />
+      <Route path="/legal" component={LegalPage} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
