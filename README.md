@@ -9,7 +9,7 @@ npm install @clerk/clerk-react
 ```
 
 Create a `.env` file in the project root and add:
-
+kgjrniwebnr
 ```bash
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
 NEWSLETTER_ENCRYPTION_KEY=replace_with_a_long_random_secret
