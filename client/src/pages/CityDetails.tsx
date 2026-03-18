@@ -10,6 +10,7 @@ type CityComment = {
   id: string;
   city_id: string;
   author_email: string;
+  author_name?: string | null;
   content: string;
   created_at: string;
 };
@@ -27,15 +28,33 @@ export default function CityDetails() {
   const [lastCommentAt, setLastCommentAt] = useState(0);
 
   const loadComments = async (targetCityId: string) => {
-    if (!supabase) return;
-    const { data, error } = await supabase
-      .from("city_comments")
-      .select("id, city_id, author_email, content, created_at")
-      .eq("city_id", targetCityId)
-      .order("created_at", { ascending: false });
+    const supabaseClient = supabase;
+    if (!supabaseClient) return;
+    const fetchWithColumns = (columns: string) =>
+      supabaseClient
+        .from("city_comments")
+        .select(columns)
+        .eq("city_id", targetCityId)
+        .order("created_at", { ascending: false });
 
-    if (!error) {
-      setComments((data ?? []) as CityComment[]);
+    const { data, error } = await fetchWithColumns(
+      "id, city_id, author_email, author_name, content, created_at",
+    );
+
+    if (!error && data) {
+      setComments(data as unknown as CityComment[]);
+      return;
+    }
+
+    const needsFallback =
+      typeof error.message === "string" && error.message.includes("author_name");
+    if (!needsFallback) return;
+
+    const fallback = await fetchWithColumns(
+      "id, city_id, author_email, content, created_at",
+    );
+    if (!fallback.error && fallback.data) {
+      setComments(fallback.data as unknown as CityComment[]);
     }
   };
 
@@ -86,12 +105,27 @@ export default function CityDetails() {
       const { error } = await supabase.from("city_comments").insert({
         city_id: city.id,
         author_email: session.user.email,
+        author_name: session.user.user_metadata?.display_name ?? null,
         content: body,
       });
 
       if (error) {
-        setCommentMessage("Could not post comment.");
-        return;
+        const needsFallback =
+          typeof error.message === "string" && error.message.includes("author_name");
+        if (!needsFallback) {
+          setCommentMessage("Could not post comment.");
+          return;
+        }
+
+        const retry = await supabase.from("city_comments").insert({
+          city_id: city.id,
+          author_email: session.user.email,
+          content: body,
+        });
+        if (retry.error) {
+          setCommentMessage("Could not post comment.");
+          return;
+        }
       }
 
       setNewComment("");
@@ -212,7 +246,8 @@ export default function CityDetails() {
                 {comments.map((comment) => (
                   <div key={comment.id} className="border border-border rounded-md p-3">
                     <p className="text-xs text-muted-foreground mb-1">
-                      {comment.author_email} · {new Date(comment.created_at).toLocaleString()}
+                      {(comment.author_name || comment.author_email)} ·{" "}
+                      {new Date(comment.created_at).toLocaleString()}
                     </p>
                     <p className="text-sm">{comment.content}</p>
                   </div>

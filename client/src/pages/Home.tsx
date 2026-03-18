@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CITIES } from "@/data/cities";
 import { ALBANIA_MAP_PATH, projectAlbaniaPoint } from "@/data/albaniaMap";
+import { supabase } from "@/lib/supabase";
 
 const GUIDES = [
   { title: "Albanian Riviera", icon: Sun, description: "Crystal clear waters from Vlorë to Ksamil." },
@@ -15,8 +16,8 @@ const GUIDES = [
 ];
 
 const NAV_ITEMS = [
-  { label: "For Albanians", href: "/for-albanians" },
-  { label: "For Visitors", href: "/for-visitors" },
+  { label: "For Albanians", href: "/thashetheme-square" },
+  { label: "For Visitors", href: "/visitors-guide" },
   { label: "What's New", href: "/whats-new" },
   { label: "Plan Your Trip", href: "/plan-your-trip" },
 ];
@@ -72,6 +73,7 @@ export default function Home() {
   const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
   const [newsletterHoneypot, setNewsletterHoneypot] = useState("");
   const [newsletterFormStartedAt] = useState(() => Date.now());
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [, navigate] = useLocation();
 
   // Weather Fetch Logic
@@ -111,6 +113,19 @@ export default function Home() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
+    void supabase.auth.getSession().then(({ data }) => {
+      setCurrentUserEmail(data.session?.user?.email ?? null);
+    });
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUserEmail(session?.user?.email ?? null);
+    });
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const cycleHeroBackground = () => {
@@ -204,18 +219,21 @@ export default function Home() {
                 {item.label}
               </Link>
             ))}
-            <Link
-              href="/sign-in"
-              className="shrink-0 text-white/90 hover:text-white transition-colors border border-white/25 rounded-full px-3 py-1.5 text-xs"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/sign-up"
-              className="shrink-0 text-white/90 hover:text-white transition-colors border border-white/25 rounded-full px-3 py-1.5 text-xs"
-            >
-              Sign Up
-            </Link>
+            {currentUserEmail ? (
+              <Link
+                href="/profile"
+                className="shrink-0 text-white/90 hover:text-white transition-colors border border-white/25 rounded-full px-3 py-1.5 text-xs"
+              >
+                Profile
+              </Link>
+            ) : (
+              <Link
+                href="/auth"
+                className="shrink-0 text-white/90 hover:text-white transition-colors border border-white/25 rounded-full px-3 py-1.5 text-xs"
+              >
+                Sign In
+              </Link>
+            )}
           </nav>
         </div>
 
@@ -243,18 +261,21 @@ export default function Home() {
           }`}
         >
           <div className="flex items-center gap-2">
-            <Link
-              href="/sign-in"
-              className="text-white/90 hover:text-white transition-colors border border-white/35 bg-black/35 backdrop-blur-md rounded-full px-4 py-2 text-xs md:text-sm"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/sign-up"
-              className="text-white/90 hover:text-white transition-colors border border-white/35 bg-black/35 backdrop-blur-md rounded-full px-4 py-2 text-xs md:text-sm"
-            >
-              Sign Up
-            </Link>
+            {currentUserEmail ? (
+              <Link
+                href="/profile"
+                className="text-white/90 hover:text-white transition-colors border border-white/35 bg-black/35 backdrop-blur-md rounded-full px-4 py-2 text-xs md:text-sm"
+              >
+                Profile
+              </Link>
+            ) : (
+              <Link
+                href="/auth"
+                className="text-white/90 hover:text-white transition-colors border border-white/35 bg-black/35 backdrop-blur-md rounded-full px-4 py-2 text-xs md:text-sm"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
         
@@ -610,6 +631,9 @@ export default function Home() {
             </Link>
             <Link href="/legal#terms" className="hover:text-white transition-colors">
               Terms of Service
+            </Link>
+            <Link href="/about" className="hover:text-white transition-colors">
+              About Us
             </Link>
           </div>
         </div>

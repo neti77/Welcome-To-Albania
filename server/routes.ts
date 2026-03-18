@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import {
   insertNewsletterSubscriberSchema,
   insertNewsletterInboxItemSchema,
+  insertNewsItemSchema,
 } from "@shared/schema";
 
 const newsletterRateLimit = new Map<string, number[]>();
@@ -168,6 +169,44 @@ export async function registerRoutes(
         recipientCount: recipients.length,
         recipients,
       });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.get("/api/news", async (req, res, next) => {
+    try {
+      const items = await storage.listNewsItems();
+      return res.status(200).json({ count: items.length, items });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.get("/api/admin/news", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const items = await storage.listNewsItems();
+      return res.status(200).json({ count: items.length, items });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/admin/news", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const parsed = insertNewsItemSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Title, description, and image URL are required." });
+      }
+
+      const item = await storage.createNewsItem(parsed.data);
+      return res.status(201).json({ message: "News published.", item });
     } catch (error) {
       return next(error);
     }

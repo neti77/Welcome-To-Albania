@@ -33,11 +33,15 @@ create table if not exists public.city_comments (
   id uuid primary key default gen_random_uuid(),
   city_id text not null,
   author_email text not null,
+  author_name text,
   content text not null,
   created_at timestamptz not null default now()
 );
 
 alter table public.city_comments enable row level security;
+
+alter table public.city_comments
+add column if not exists author_name text;
 
 create policy "public can read comments"
 on public.city_comments
@@ -50,6 +54,39 @@ for insert
 to authenticated
 with check (auth.email() = author_email);
 ```
+
+## Supabase news comments table
+
+Run this SQL in Supabase SQL editor for the Thashetheme Square page:
+
+```sql
+create table if not exists public.news_comments (
+  id uuid primary key default gen_random_uuid(),
+  news_id text not null,
+  author_email text not null,
+  author_name text,
+  content text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.news_comments enable row level security;
+
+alter table public.news_comments
+add column if not exists author_name text;
+
+create policy "public can read news comments"
+on public.news_comments
+for select
+using (true);
+
+create policy "authenticated can insert news comments"
+on public.news_comments
+for insert
+to authenticated
+with check (auth.email() = author_email);
+```
+
+Enable Realtime for `news_comments` in Supabase (Database -> Replication) so new comments appear live.
 
 ## Optional profiles table (user type)
 
