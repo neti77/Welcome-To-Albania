@@ -39,6 +39,8 @@ export interface IStorage {
   markNewsletterInboxItemSent(id: string): Promise<NewsletterInboxItem | null>;
   listNewsItems(): Promise<NewsItem[]>;
   createNewsItem(input: InsertNewsItem): Promise<NewsItem>;
+  updateNewsItemStatus(id: string, status: NewsItem["status"]): Promise<NewsItem | null>;
+  deleteNewsItem(id: string): Promise<boolean>;
 }
 
 type StoredNewsletterSubscriber = {
@@ -384,11 +386,34 @@ export class MemStorage implements IStorage {
       title: input.title.trim(),
       description: input.description.trim(),
       imageUrl: input.imageUrl.trim(),
+      status: input.status ?? "draft",
       createdAt: new Date().toISOString(),
     };
     this.newsItems.set(item.id, item);
     await this.persistNewsItems();
     return item;
+  }
+
+  async updateNewsItemStatus(
+    id: string,
+    status: NewsItem["status"],
+  ): Promise<NewsItem | null> {
+    await this.ensureNewsLoaded();
+    const existing = this.newsItems.get(id);
+    if (!existing) return null;
+    const updated: NewsItem = { ...existing, status };
+    this.newsItems.set(id, updated);
+    await this.persistNewsItems();
+    return updated;
+  }
+
+  async deleteNewsItem(id: string): Promise<boolean> {
+    await this.ensureNewsLoaded();
+    const exists = this.newsItems.has(id);
+    if (!exists) return false;
+    this.newsItems.delete(id);
+    await this.persistNewsItems();
+    return true;
   }
 }
 

@@ -23,6 +23,7 @@ type NewsItem = {
   title: string;
   description: string;
   imageUrl: string;
+  status: "draft" | "published";
   createdAt: string;
 };
 
@@ -243,7 +244,7 @@ export default function AdminNewsletterPage() {
     }
   };
 
-  const publishNews = async () => {
+  const saveNewsDraft = async () => {
     if (!token?.trim()) {
       navigate("/admin/login");
       return;
@@ -263,6 +264,7 @@ export default function AdminNewsletterPage() {
           title: newsTitle,
           description: newsDescription,
           imageUrl: normalizeImageUrl(newsImageUrl),
+          status: "draft",
         }),
       });
 
@@ -280,12 +282,96 @@ export default function AdminNewsletterPage() {
       setNewsDescription("");
       setNewsImageUrl("");
       setNewsImageError(false);
+      setActionMessage("News draft saved.");
+      await loadAdminData();
+    } catch {
+      setErrorMessage("Could not save news.");
+    } finally {
+      setPublishingNews(false);
+    }
+  };
+
+  const publishNewsItem = async (itemId: string) => {
+    if (!token?.trim()) {
+      navigate("/admin/login");
+      return;
+    }
+    setErrorMessage("");
+    setActionMessage("");
+    try {
+      const { response, data } = await fetchJson(`/api/admin/news/${itemId}/publish`, {
+        method: "POST",
+        headers: { "x-admin-token": token.trim() },
+      });
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.localStorage.removeItem(TOKEN_KEY);
+          navigate("/admin/login");
+          return;
+        }
+        setErrorMessage(data?.message ?? "Could not publish news.");
+        return;
+      }
       setActionMessage("News published.");
       await loadAdminData();
     } catch {
       setErrorMessage("Could not publish news.");
-    } finally {
-      setPublishingNews(false);
+    }
+  };
+
+  const unpublishNewsItem = async (itemId: string) => {
+    if (!token?.trim()) {
+      navigate("/admin/login");
+      return;
+    }
+    setErrorMessage("");
+    setActionMessage("");
+    try {
+      const { response, data } = await fetchJson(`/api/admin/news/${itemId}/unpublish`, {
+        method: "POST",
+        headers: { "x-admin-token": token.trim() },
+      });
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.localStorage.removeItem(TOKEN_KEY);
+          navigate("/admin/login");
+          return;
+        }
+        setErrorMessage(data?.message ?? "Could not move to draft.");
+        return;
+      }
+      setActionMessage("News moved to drafts.");
+      await loadAdminData();
+    } catch {
+      setErrorMessage("Could not move to draft.");
+    }
+  };
+
+  const deleteNewsItem = async (itemId: string) => {
+    if (!token?.trim()) {
+      navigate("/admin/login");
+      return;
+    }
+    setErrorMessage("");
+    setActionMessage("");
+    try {
+      const { response, data } = await fetchJson(`/api/admin/news/${itemId}`, {
+        method: "DELETE",
+        headers: { "x-admin-token": token.trim() },
+      });
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.localStorage.removeItem(TOKEN_KEY);
+          navigate("/admin/login");
+          return;
+        }
+        setErrorMessage(data?.message ?? "Could not delete news.");
+        return;
+      }
+      setActionMessage("News deleted.");
+      await loadAdminData();
+    } catch {
+      setErrorMessage("Could not delete news.");
     }
   };
 
@@ -428,7 +514,7 @@ export default function AdminNewsletterPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardContent className="p-6 space-y-3">
-              <h2 className="text-xl font-semibold">Publish News</h2>
+              <h2 className="text-xl font-semibold">Create News Draft</h2>
               <p className="text-sm text-muted-foreground">
                 Add a headline, short description, and a direct image URL (https://).
               </p>
@@ -471,8 +557,8 @@ export default function AdminNewsletterPage() {
                   </div>
                 )}
               </div>
-              <Button onClick={publishNews} disabled={publishingNews}>
-                {publishingNews ? "Publishing..." : "Publish News"}
+              <Button onClick={saveNewsDraft} disabled={publishingNews}>
+                {publishingNews ? "Saving..." : "Save Draft"}
               </Button>
             </CardContent>
           </Card>
@@ -505,8 +591,33 @@ export default function AdminNewsletterPage() {
                         {item.description}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
-                        {new Date(item.createdAt).toLocaleString()}
+                        {item.status.toUpperCase()} · {new Date(item.createdAt).toLocaleString()}
                       </p>
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {item.status === "draft" ? (
+                          <Button
+                            size="sm"
+                            onClick={() => publishNewsItem(item.id)}
+                          >
+                            Publish
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => unpublishNewsItem(item.id)}
+                          >
+                            Move to Draft
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteNewsItem(item.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}

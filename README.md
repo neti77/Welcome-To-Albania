@@ -88,6 +88,60 @@ with check (auth.email() = author_email);
 
 Enable Realtime for `news_comments` in Supabase (Database -> Replication) so new comments appear live.
 
+## Replies + Inbox (optional)
+
+Add reply fields to comments:
+
+```sql
+alter table public.news_comments
+add column if not exists reply_to_comment_id uuid,
+add column if not exists reply_to_email text,
+add column if not exists reply_to_name text,
+add column if not exists reply_to_preview text;
+
+alter table public.city_comments
+add column if not exists reply_to_comment_id uuid,
+add column if not exists reply_to_email text,
+add column if not exists reply_to_name text,
+add column if not exists reply_to_preview text;
+```
+
+Create the inbox notifications table:
+
+```sql
+create table if not exists public.comment_notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_email text not null,
+  sender_email text not null,
+  sender_name text,
+  context_type text not null check (context_type in ('news', 'city')),
+  context_id text not null,
+  message text not null,
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+
+alter table public.comment_notifications enable row level security;
+
+create policy "recipients can read inbox"
+on public.comment_notifications
+for select
+to authenticated
+using (auth.email() = recipient_email);
+
+create policy "senders can create notifications"
+on public.comment_notifications
+for insert
+to authenticated
+with check (auth.email() = sender_email);
+
+create policy "recipients can mark read"
+on public.comment_notifications
+for update
+to authenticated
+using (auth.email() = recipient_email);
+```
+
 ## Optional profiles table (user type)
 
 If you want to persist roles (`native`, `tourist`, `visitor`) in a table:

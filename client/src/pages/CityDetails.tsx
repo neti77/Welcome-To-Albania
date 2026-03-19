@@ -11,6 +11,10 @@ type CityComment = {
   city_id: string;
   author_email: string;
   author_name?: string | null;
+  reply_to_comment_id?: string | null;
+  reply_to_email?: string | null;
+  reply_to_name?: string | null;
+  reply_to_preview?: string | null;
   content: string;
   created_at: string;
 };
@@ -26,8 +30,14 @@ export default function CityDetails() {
   const [commentHoneypot, setCommentHoneypot] = useState("");
   const [commentFormStartedAt] = useState(() => Date.now());
   const [lastCommentAt, setLastCommentAt] = useState(0);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsHasMore, setCommentsHasMore] = useState(true);
+  const [commentsPageSize] = useState(25);
+  const [commentsStatus, setCommentsStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [commentsRetryTick, setCommentsRetryTick] = useState(0);
+  const [replyTarget, setReplyTarget] = useState<CityComment | null>(null);
 
-  const loadComments = async (targetCityId: string) => {
+  const loadComments = async (targetCityId: string, offset = 0, append = false) => {
     const supabaseClient = supabase;
     if (!supabaseClient) return;
     const fetchWithColumns = (columns: string) =>
@@ -35,34 +45,71 @@ export default function CityDetails() {
         .from("city_comments")
         .select(columns)
         .eq("city_id", targetCityId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(offset, offset + commentsPageSize - 1);
 
+    setCommentsLoading(true);
+    setCommentsStatus("loading");
     const { data, error } = await fetchWithColumns(
-      "id, city_id, author_email, author_name, content, created_at",
+      "id, city_id, author_email, author_name, reply_to_comment_id, reply_to_email, reply_to_name, reply_to_preview, content, created_at",
     );
 
     if (!error && data) {
-      setComments(data as unknown as CityComment[]);
+      const next = data as unknown as CityComment[];
+      setComments((current) => (append ? [...current, ...next] : next));
+      setCommentsHasMore(next.length === commentsPageSize);
+      setCommentsStatus("ready");
+      setCommentsLoading(false);
       return;
     }
 
     const needsFallback =
-      typeof error.message === "string" && error.message.includes("author_name");
+      typeof error.message === "string" &&
+      (error.message.includes("author_name") || error.message.includes("reply_to"));
     if (!needsFallback) return;
 
     const fallback = await fetchWithColumns(
       "id, city_id, author_email, content, created_at",
     );
     if (!fallback.error && fallback.data) {
-      setComments(fallback.data as unknown as CityComment[]);
+      const next = fallback.data as unknown as CityComment[];
+      setComments((current) => (append ? [...current, ...next] : next));
+      setCommentsHasMore(next.length === commentsPageSize);
+      setCommentsStatus("ready");
+      setCommentsLoading(false);
+      return;
     }
+    setCommentsStatus("error");
+    setCommentsLoading(false);
   };
 
   useEffect(() => {
     if (city) {
-      void loadComments(city.id);
+      setComments([]);
+      setCommentsHasMore(true);
+      setCommentsStatus("loading");
+      setReplyTarget(null);
+      void loadComments(city.id, 0, false);
     }
   }, [city?.id]);
+
+  useEffect(() => {
+    if (!city?.id || commentsStatus !== "error") return;
+    const timer = window.setTimeout(() => {
+      setCommentsRetryTick((tick) => tick + 1);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [commentsStatus, city?.id]);
+
+  useEffect(() => {
+    if (!city?.id || commentsStatus !== "error") return;
+    void loadComments(city.id, 0, false);
+  }, [commentsRetryTick, commentsStatus, city?.id]);
+
+  const loadMoreComments = async () => {
+    if (!city || commentsLoading || !commentsHasMore) return;
+    await loadComments(city.id, comments.length, true);
+  };
 
   const onSubmitComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -102,10 +149,18 @@ export default function CityDetails() {
         return;
       }
 
+      const replyPreview = replyTarget?.content
+        ? replyTarget.content.slice(0, 120)
+        : null;
+
       const { error } = await supabase.from("city_comments").insert({
         city_id: city.id,
         author_email: session.user.email,
         author_name: session.user.user_metadata?.display_name ?? null,
+        reply_to_comment_id: replyTarget?.id ?? null,
+        reply_to_email: replyTarget?.author_email ?? null,
+        reply_to_name: replyTarget?.author_name ?? null,
+        reply_to_preview: replyPreview,
         content: body,
       });
 
@@ -128,9 +183,24 @@ export default function CityDetails() {
         }
       }
 
+      if (
+        replyTarget?.author_email &&
+        replyTarget.author_email !== session.user.email
+      ) {
+        await supabase.from("comment_notifications").insert({
+          recipient_email: replyTarget.author_email,
+          sender_email: session.user.email,
+          sender_name: session.user.user_metadata?.display_name ?? null,
+          context_type: "city",
+          context_id: city.id,
+          message: body.slice(0, 160),
+        });
+      }
+
       setNewComment("");
       setCommentMessage("Comment posted.");
       setLastCommentAt(Date.now());
+      setReplyTarget(null);
       await loadComments(city.id);
     } catch {
       setCommentMessage("Could not post comment.");
@@ -219,6 +289,20 @@ export default function CityDetails() {
                 )}
               </div>
               <form onSubmit={onSubmitComment} className="space-y-3">
+                {replyTarget && (
+                  <div className="flex items-center justify-between rounded-md border border-border/60 bg-secondary/40 px-3 py-2 text-xs">
+                    <span>
+                      Replying to {replyTarget.author_name || replyTarget.author_email}
+                    </span>
+                    <button
+                      type="button"
+                      className="uppercase tracking-wider text-[10px]"
+                      onClick={() => setReplyTarget(null)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
                 <textarea
                   value={newComment}
                   onChange={(event) => setNewComment(event.target.value)}
@@ -243,13 +327,42 @@ export default function CityDetails() {
                 <p className="text-sm text-muted-foreground">{commentMessage}</p>
               )}
               <div className="space-y-2">
+                {commentsStatus === "loading" && (
+                  <p className="text-xs text-muted-foreground">Loading comments…</p>
+                )}
+                {commentsStatus === "error" && (
+                  <p className="text-xs text-muted-foreground">Reconnecting…</p>
+                )}
+                {commentsHasMore && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadMoreComments}
+                    disabled={commentsLoading}
+                  >
+                    {commentsLoading ? "Loading..." : "Load more comments"}
+                  </Button>
+                )}
                 {comments.map((comment) => (
                   <div key={comment.id} className="border border-border rounded-md p-3">
                     <p className="text-xs text-muted-foreground mb-1">
                       {(comment.author_name || comment.author_email)} ·{" "}
                       {new Date(comment.created_at).toLocaleString()}
                     </p>
+                    {(comment.reply_to_name || comment.reply_to_preview) && (
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Replying to {comment.reply_to_name ?? "someone"}
+                        {comment.reply_to_preview ? `: "${comment.reply_to_preview}"` : ""}
+                      </p>
+                    )}
                     <p className="text-sm">{comment.content}</p>
+                    <button
+                      type="button"
+                      className="mt-2 text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                      onClick={() => setReplyTarget(comment)}
+                    >
+                      Reply
+                    </button>
                   </div>
                 ))}
                 {!comments.length && (

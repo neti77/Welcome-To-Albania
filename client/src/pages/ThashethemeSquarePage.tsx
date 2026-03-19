@@ -9,6 +9,7 @@ type NewsItem = {
   title: string;
   description: string;
   imageUrl: string;
+  status?: "draft" | "published";
 };
 
 type NewsComment = {
@@ -16,6 +17,10 @@ type NewsComment = {
   news_id: string;
   author_email: string;
   author_name?: string | null;
+  reply_to_comment_id?: string | null;
+  reply_to_email?: string | null;
+  reply_to_name?: string | null;
+  reply_to_preview?: string | null;
   content: string;
   created_at: string;
 };
@@ -63,8 +68,14 @@ export default function ThashethemeSquarePage() {
   const [lastCommentAt, setLastCommentAt] = useState(0);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsHasMore, setCommentsHasMore] = useState(true);
+  const [commentsPageSize] = useState(30);
+  const [commentsStatus, setCommentsStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [commentsRetryTick, setCommentsRetryTick] = useState(0);
+  const [replyTarget, setReplyTarget] = useState<NewsComment | null>(null);
 
-  const loadComments = async (newsId: string) => {
+  const loadComments = async (newsId: string, offset = 0, append = false) => {
     const supabaseClient = supabase;
     if (!supabaseClient) return;
     const fetchWithColumns = (columns: string) =>
@@ -72,27 +83,44 @@ export default function ThashethemeSquarePage() {
         .from("news_comments")
         .select(columns)
         .eq("news_id", newsId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .range(offset, offset + commentsPageSize - 1);
 
+    setCommentsLoading(true);
+    setCommentsStatus("loading");
     const { data, error } = await fetchWithColumns(
-      "id, news_id, author_email, author_name, content, created_at",
+      "id, news_id, author_email, author_name, reply_to_comment_id, reply_to_email, reply_to_name, reply_to_preview, content, created_at",
     );
 
     if (!error && data) {
-      setComments(data as unknown as NewsComment[]);
+      const batch = data as unknown as NewsComment[];
+      const ordered = batch.slice().reverse();
+      setComments((current) => (append ? [...ordered, ...current] : ordered));
+      setCommentsHasMore(batch.length === commentsPageSize);
+      setCommentsStatus("ready");
+      setCommentsLoading(false);
       return;
     }
 
     const needsFallback =
-      typeof error.message === "string" && error.message.includes("author_name");
+      typeof error.message === "string" &&
+      (error.message.includes("author_name") || error.message.includes("reply_to"));
     if (!needsFallback) return;
 
     const fallback = await fetchWithColumns(
       "id, news_id, author_email, content, created_at",
     );
     if (!fallback.error && fallback.data) {
-      setComments(fallback.data as unknown as NewsComment[]);
+      const batch = fallback.data as unknown as NewsComment[];
+      const ordered = batch.slice().reverse();
+      setComments((current) => (append ? [...ordered, ...current] : ordered));
+      setCommentsHasMore(batch.length === commentsPageSize);
+      setCommentsStatus("ready");
+      setCommentsLoading(false);
+      return;
     }
+    setCommentsStatus("error");
+    setCommentsLoading(false);
   };
 
   useEffect(() => {
@@ -114,9 +142,31 @@ export default function ThashethemeSquarePage() {
 
   useEffect(() => {
     if (selectedNews?.id) {
-      void loadComments(selectedNews.id);
+      setComments([]);
+      setCommentsHasMore(true);
+      setCommentsStatus("loading");
+      setReplyTarget(null);
+      void loadComments(selectedNews.id, 0, false);
     }
   }, [selectedNews?.id]);
+
+  useEffect(() => {
+    if (!selectedNews?.id || commentsStatus !== "error") return;
+    const timer = window.setTimeout(() => {
+      setCommentsRetryTick((tick) => tick + 1);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [commentsStatus, selectedNews?.id]);
+
+  useEffect(() => {
+    if (!selectedNews?.id || commentsStatus !== "error") return;
+    void loadComments(selectedNews.id, 0, false);
+  }, [commentsRetryTick, commentsStatus, selectedNews?.id]);
+
+  const loadMoreComments = async () => {
+    if (!selectedNews?.id || commentsLoading || !commentsHasMore) return;
+    await loadComments(selectedNews.id, comments.length, true);
+  };
 
   useEffect(() => {
     if (!supabase) return;
@@ -205,10 +255,18 @@ export default function ThashethemeSquarePage() {
         return;
       }
 
+      const replyPreview = replyTarget?.content
+        ? replyTarget.content.slice(0, 120)
+        : null;
+
       const { error } = await supabase.from("news_comments").insert({
         news_id: selectedNews.id,
         author_email: session.user.email,
         author_name: session.user.user_metadata?.display_name ?? null,
+        reply_to_comment_id: replyTarget?.id ?? null,
+        reply_to_email: replyTarget?.author_email ?? null,
+        reply_to_name: replyTarget?.author_name ?? null,
+        reply_to_preview: replyPreview,
         content: body,
       });
 
@@ -231,9 +289,24 @@ export default function ThashethemeSquarePage() {
         }
       }
 
+      if (
+        replyTarget?.author_email &&
+        replyTarget.author_email !== session.user.email
+      ) {
+        await supabase.from("comment_notifications").insert({
+          recipient_email: replyTarget.author_email,
+          sender_email: session.user.email,
+          sender_name: session.user.user_metadata?.display_name ?? null,
+          context_type: "news",
+          context_id: selectedNews.id,
+          message: body.slice(0, 160),
+        });
+      }
+
       setNewComment("");
       setCommentMessage("Comment posted.");
       setLastCommentAt(Date.now());
+      setReplyTarget(null);
       await loadComments(selectedNews.id);
     } catch {
       setCommentMessage("Could not post comment.");
@@ -315,6 +388,29 @@ export default function ThashethemeSquarePage() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
+                  {commentsStatus === "loading" && (
+                    <div className="text-xs text-muted-foreground flex items-center gap-2">
+                      <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Loading messages...
+                    </div>
+                  )}
+                  {commentsStatus === "error" && (
+                    <div className="text-xs text-muted-foreground">
+                      Reconnecting… Retrying now.
+                    </div>
+                  )}
+                  {commentsHasMore && (
+                    <div className="flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={loadMoreComments}
+                        disabled={commentsLoading}
+                      >
+                        {commentsLoading ? "Loading..." : "Load older messages"}
+                      </Button>
+                    </div>
+                  )}
                   {comments.map((comment) => {
                     const isMine = currentUserEmail && comment.author_email === currentUserEmail;
                     const displayName = comment.author_name || comment.author_email;
@@ -333,6 +429,12 @@ export default function ThashethemeSquarePage() {
                           <p className="text-[10px] uppercase tracking-wider opacity-70 mb-1">
                             {displayName}
                           </p>
+                          {(comment.reply_to_name || comment.reply_to_preview) && (
+                            <div className="rounded-md border border-border/40 bg-background/70 px-2 py-1 text-[11px] text-muted-foreground mb-2">
+                              Replying to {comment.reply_to_name ?? "someone"}
+                              {comment.reply_to_preview ? `: "${comment.reply_to_preview}"` : ""}
+                            </div>
+                          )}
                           <p>{comment.content}</p>
                           <p className="text-[10px] opacity-70 mt-2">
                             {new Date(comment.created_at).toLocaleTimeString([], {
@@ -340,6 +442,13 @@ export default function ThashethemeSquarePage() {
                               minute: "2-digit",
                             })}
                           </p>
+                          <button
+                            type="button"
+                            className="mt-2 text-[11px] uppercase tracking-wider opacity-70 hover:opacity-100"
+                            onClick={() => setReplyTarget(comment)}
+                          >
+                            Reply
+                          </button>
                         </div>
                       </div>
                     );
@@ -358,6 +467,20 @@ export default function ThashethemeSquarePage() {
 
                 <div className="border-t border-border px-5 py-4">
                   <form onSubmit={onSubmitComment} className="space-y-2">
+                    {replyTarget && (
+                      <div className="flex items-center justify-between rounded-md border border-border/60 bg-secondary/40 px-3 py-2 text-xs">
+                        <span>
+                          Replying to {replyTarget.author_name || replyTarget.author_email}
+                        </span>
+                        <button
+                          type="button"
+                          className="uppercase tracking-wider text-[10px]"
+                          onClick={() => setReplyTarget(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                     <textarea
                       value={newComment}
                       onChange={(event) => setNewComment(event.target.value)}

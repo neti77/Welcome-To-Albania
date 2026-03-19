@@ -177,7 +177,8 @@ export async function registerRoutes(
   app.get("/api/news", async (req, res, next) => {
     try {
       const items = await storage.listNewsItems();
-      return res.status(200).json({ count: items.length, items });
+      const published = items.filter((item) => item.status === "published");
+      return res.status(200).json({ count: published.length, items: published });
     } catch (error) {
       return next(error);
     }
@@ -206,7 +207,55 @@ export async function registerRoutes(
       }
 
       const item = await storage.createNewsItem(parsed.data);
-      return res.status(201).json({ message: "News published.", item });
+      return res.status(201).json({ message: "News saved.", item });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/admin/news/:id/publish", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const item = await storage.updateNewsItemStatus(req.params.id, "published");
+      if (!item) {
+        return res.status(404).json({ message: "News post not found." });
+      }
+
+      return res.status(200).json({ message: "News published.", item });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/admin/news/:id/unpublish", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const item = await storage.updateNewsItemStatus(req.params.id, "draft");
+      if (!item) {
+        return res.status(404).json({ message: "News post not found." });
+      }
+
+      return res.status(200).json({ message: "News moved to drafts.", item });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.delete("/api/admin/news/:id", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const deleted = await storage.deleteNewsItem(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "News post not found." });
+      }
+
+      return res.status(200).json({ message: "News deleted." });
     } catch (error) {
       return next(error);
     }

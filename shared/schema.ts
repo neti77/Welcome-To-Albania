@@ -53,6 +53,7 @@ export const insertNewsItemSchema = z.object({
   title: z.string().trim().min(3).max(140),
   description: z.string().trim().min(10).max(800),
   imageUrl: z.string().trim().min(5).max(2000),
+  status: z.enum(["draft", "published"]).optional(),
 });
 
 export type InsertNewsItem = z.infer<typeof insertNewsItemSchema>;
@@ -62,5 +63,6 @@ export type NewsItem = {
   title: string;
   description: string;
   imageUrl: string;
+  status: "draft" | "published";
   createdAt: string;
 };
