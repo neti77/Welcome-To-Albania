@@ -71,13 +71,16 @@ export default function ThashethemeSquarePage() {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentsHasMore, setCommentsHasMore] = useState(true);
   const [commentsPageSize] = useState(30);
+  const [minimumCommentsToShow, setMinimumCommentsToShow] = useState(10);
   const [commentsStatus, setCommentsStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [commentsRetryTick, setCommentsRetryTick] = useState(0);
   const [replyTarget, setReplyTarget] = useState<NewsComment | null>(null);
+  const commentsCacheTtlMs = 5 * 60 * 1000;
 
   const loadComments = async (newsId: string, offset = 0, append = false) => {
     const supabaseClient = supabase;
     if (!supabaseClient) return;
+    const existing = comments;
     const fetchWithColumns = (columns: string) =>
       supabaseClient
         .from("news_comments")
@@ -85,6 +88,25 @@ export default function ThashethemeSquarePage() {
         .eq("news_id", newsId)
         .order("created_at", { ascending: false })
         .range(offset, offset + commentsPageSize - 1);
+
+    if (!append && offset === 0) {
+      try {
+        const cacheKey = `news_comments_cache_${newsId}`;
+        const cachedRaw = window.localStorage.getItem(cacheKey);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw) as {
+            updatedAt: number;
+            comments: NewsComment[];
+          };
+          if (Date.now() - cached.updatedAt < commentsCacheTtlMs) {
+            setComments(cached.comments);
+            setCommentsStatus("ready");
+          }
+        }
+      } catch {
+        // ignore cache errors
+      }
+    }
 
     setCommentsLoading(true);
     setCommentsStatus("loading");
@@ -95,9 +117,25 @@ export default function ThashethemeSquarePage() {
     if (!error && data) {
       const batch = data as unknown as NewsComment[];
       const ordered = batch.slice().reverse();
-      setComments((current) => (append ? [...ordered, ...current] : ordered));
+      const merged = append ? [...ordered, ...existing] : ordered;
+      setComments(merged);
       setCommentsHasMore(batch.length === commentsPageSize);
-      setCommentsStatus("ready");
+      if (!append && ordered.length < minimumCommentsToShow && batch.length > 0 && offset === 0) {
+        void loadComments(newsId, ordered.length, true);
+      } else {
+        setCommentsStatus("ready");
+      }
+      try {
+        if (!append && offset === 0) {
+          const cacheKey = `news_comments_cache_${newsId}`;
+          window.localStorage.setItem(
+            cacheKey,
+            JSON.stringify({ updatedAt: Date.now(), comments: merged }),
+          );
+        }
+      } catch {
+        // ignore cache errors
+      }
       setCommentsLoading(false);
       return;
     }
@@ -113,9 +151,25 @@ export default function ThashethemeSquarePage() {
     if (!fallback.error && fallback.data) {
       const batch = fallback.data as unknown as NewsComment[];
       const ordered = batch.slice().reverse();
-      setComments((current) => (append ? [...ordered, ...current] : ordered));
+      const merged = append ? [...ordered, ...existing] : ordered;
+      setComments(merged);
       setCommentsHasMore(batch.length === commentsPageSize);
-      setCommentsStatus("ready");
+      if (!append && ordered.length < minimumCommentsToShow && batch.length > 0 && offset === 0) {
+        void loadComments(newsId, ordered.length, true);
+      } else {
+        setCommentsStatus("ready");
+      }
+      try {
+        if (!append && offset === 0) {
+          const cacheKey = `news_comments_cache_${newsId}`;
+          window.localStorage.setItem(
+            cacheKey,
+            JSON.stringify({ updatedAt: Date.now(), comments: merged }),
+          );
+        }
+      } catch {
+        // ignore cache errors
+      }
       setCommentsLoading(false);
       return;
     }
@@ -149,6 +203,13 @@ export default function ThashethemeSquarePage() {
       void loadComments(selectedNews.id, 0, false);
     }
   }, [selectedNews?.id]);
+
+  useEffect(() => {
+    if (!selectedNews?.id) return;
+    if (comments.length >= minimumCommentsToShow || (!commentsHasMore && comments.length > 0)) {
+      setCommentsStatus("ready");
+    }
+  }, [comments.length, commentsHasMore, minimumCommentsToShow, selectedNews?.id]);
 
   useEffect(() => {
     if (!selectedNews?.id || commentsStatus !== "error") return;
@@ -359,7 +420,13 @@ export default function ThashethemeSquarePage() {
                   onClick={() => setSelectedNews(news)}
                   className="w-full text-left"
                 >
-                  <img src={news.imageUrl} alt={news.title} className="h-44 w-full object-cover" />
+                  <img
+                    src={news.imageUrl}
+                    alt={news.title}
+                    className="h-44 w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <CardContent className="p-5 space-y-2">
                     <p className="text-xs uppercase tracking-wider text-primary">Thashetheme News</p>
                     <h3 className="text-xl font-semibold">{news.title}</h3>
@@ -460,7 +527,7 @@ export default function ThashethemeSquarePage() {
                     </div>
                   )}
                   <div ref={messagesEndRef} />
-                  {!comments.length && (
+                  {!comments.length && commentsStatus !== "loading" && (
                     <p className="text-sm text-muted-foreground">No comments yet.</p>
                   )}
                 </div>

@@ -547,6 +547,8 @@ export default function AdminNewsletterPage() {
                     src={newsImagePreview}
                     alt="News preview"
                     className="h-36 w-full object-cover rounded-md"
+                    loading="lazy"
+                    decoding="async"
                     onError={() => setNewsImageError(true)}
                   />
                 ) : (
@@ -581,6 +583,8 @@ export default function AdminNewsletterPage() {
                       src={item.imageUrl}
                       alt={item.title}
                       className="h-28 w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                       onError={(event) => {
                         event.currentTarget.src = "/src/assets/images/city-tirana.jpg";
                       }}
@@ -591,7 +595,8 @@ export default function AdminNewsletterPage() {
                         {item.description}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
-                        {item.status.toUpperCase()} · {new Date(item.createdAt).toLocaleString()}
+                        {(item.status ?? "published").toUpperCase()} ·{" "}
+                        {new Date(item.createdAt).toLocaleString()}
                       </p>
                       <div className="flex flex-wrap gap-2 pt-2">
                         {item.status === "draft" ? (

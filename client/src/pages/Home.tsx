@@ -56,12 +56,11 @@ const VINTAGE_GALLERY = [
 ];
 
 const IN_VIEW = { once: true, amount: 0.25 } as const;
-const HERO_SLIDES = Array.from(
-  new Set([
-    "/src/assets/images/header-tirana-new.jpg",
-    ...CITIES.map((city) => city.image),
-  ]),
-);
+const HERO_SLIDES = [
+  "/src/assets/images/Tirana.jpeg",
+  "/src/assets/images/city-berat.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/f/f8/The_City_and_the_Prokletije_from_the_castle.jpg",
+];
 
 export default function Home() {
   const [selectedCity, setSelectedCity] = useState(CITIES[1]);
@@ -192,6 +191,9 @@ export default function Home() {
               src={HERO_SLIDES[heroSlideIndex]}
               alt="Albania destination slideshow"
               className="w-full h-full object-cover brightness-[0.6]"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -312,7 +314,13 @@ export default function Home() {
                 exit={{ opacity: 0, x: 20 }}
                 className="bg-card rounded-2xl overflow-hidden shadow-xl border border-border relative"
               >
-                <img src={selectedCity.image} className="h-60 md:h-72 w-full object-cover" alt={selectedCity.name} />
+                <img
+                  src={selectedCity.image}
+                  className="h-60 md:h-72 w-full object-cover"
+                  alt={selectedCity.name}
+                  loading="lazy"
+                  decoding="async"
+                />
                 
                 {/* Weather Badge - This is where the weather shows up! */}
                {weather ? (
@@ -439,8 +447,10 @@ export default function Home() {
                   src={dish.image}
                   alt={dish.title}
                   className="h-52 w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                   onError={(event) => {
-                    event.currentTarget.src = "/src/assets/images/header-tirana-new.jpg";
+                    event.currentTarget.src = "/src/assets/images/Tirana.jpeg";
                   }}
                 />
                 <CardContent className="p-5">
@@ -531,6 +541,8 @@ export default function Home() {
                   src={image}
                   alt={`Albania travel memory ${index + 1}`}
                   className="absolute w-[68%] h-[48%] object-cover rounded-md border border-white/20 shadow-xl"
+                  loading="lazy"
+                  decoding="async"
                   style={{
                     top: `${index * 22}%`,
                     left: `${index * 13}%`,

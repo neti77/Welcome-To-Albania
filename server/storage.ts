@@ -216,9 +216,16 @@ export class MemStorage implements IStorage {
     try {
       const raw = await fs.readFile(this.newsFilePath, "utf8");
       const parsed = JSON.parse(raw) as NewsItem[];
+      let migrated = false;
       for (const item of parsed) {
-        this.newsItems.set(item.id, item);
+        const normalized: NewsItem = {
+          ...item,
+          status: item.status ?? "published",
+        };
+        if (!item.status) migrated = true;
+        this.newsItems.set(item.id, normalized);
       }
+      if (migrated) await this.persistNewsItems();
     } catch (error: unknown) {
       const fileMissing =
         typeof error === "object" &&

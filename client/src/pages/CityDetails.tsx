@@ -36,10 +36,12 @@ export default function CityDetails() {
   const [commentsStatus, setCommentsStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [commentsRetryTick, setCommentsRetryTick] = useState(0);
   const [replyTarget, setReplyTarget] = useState<CityComment | null>(null);
+  const commentsCacheTtlMs = 5 * 60 * 1000;
 
   const loadComments = async (targetCityId: string, offset = 0, append = false) => {
     const supabaseClient = supabase;
     if (!supabaseClient) return;
+    const existing = comments;
     const fetchWithColumns = (columns: string) =>
       supabaseClient
         .from("city_comments")
@@ -47,6 +49,25 @@ export default function CityDetails() {
         .eq("city_id", targetCityId)
         .order("created_at", { ascending: false })
         .range(offset, offset + commentsPageSize - 1);
+
+    if (!append && offset === 0) {
+      try {
+        const cacheKey = `city_comments_cache_${targetCityId}`;
+        const cachedRaw = window.localStorage.getItem(cacheKey);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw) as {
+            updatedAt: number;
+            comments: CityComment[];
+          };
+          if (Date.now() - cached.updatedAt < commentsCacheTtlMs) {
+            setComments(cached.comments);
+            setCommentsStatus("ready");
+          }
+        }
+      } catch {
+        // ignore cache errors
+      }
+    }
 
     setCommentsLoading(true);
     setCommentsStatus("loading");
@@ -56,9 +77,21 @@ export default function CityDetails() {
 
     if (!error && data) {
       const next = data as unknown as CityComment[];
-      setComments((current) => (append ? [...current, ...next] : next));
+      const merged = append ? [...existing, ...next] : next;
+      setComments(merged);
       setCommentsHasMore(next.length === commentsPageSize);
       setCommentsStatus("ready");
+      try {
+        if (!append && offset === 0) {
+          const cacheKey = `city_comments_cache_${targetCityId}`;
+          window.localStorage.setItem(
+            cacheKey,
+            JSON.stringify({ updatedAt: Date.now(), comments: merged }),
+          );
+        }
+      } catch {
+        // ignore cache errors
+      }
       setCommentsLoading(false);
       return;
     }
@@ -73,9 +106,21 @@ export default function CityDetails() {
     );
     if (!fallback.error && fallback.data) {
       const next = fallback.data as unknown as CityComment[];
-      setComments((current) => (append ? [...current, ...next] : next));
+      const merged = append ? [...existing, ...next] : next;
+      setComments(merged);
       setCommentsHasMore(next.length === commentsPageSize);
       setCommentsStatus("ready");
+      try {
+        if (!append && offset === 0) {
+          const cacheKey = `city_comments_cache_${targetCityId}`;
+          window.localStorage.setItem(
+            cacheKey,
+            JSON.stringify({ updatedAt: Date.now(), comments: merged }),
+          );
+        }
+      } catch {
+        // ignore cache errors
+      }
       setCommentsLoading(false);
       return;
     }
@@ -230,7 +275,14 @@ export default function CityDetails() {
   return (
     <div className="min-h-screen bg-background">
       <section className="relative h-[52vh] min-h-[380px] w-full overflow-hidden">
-        <img src={city.image} alt={city.name} className="w-full h-full object-cover brightness-[0.55]" />
+        <img
+          src={city.image}
+          alt={city.name}
+          className="w-full h-full object-cover brightness-[0.55]"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+        />
         <div className="absolute inset-0 bg-black/40" />
         <div className="absolute inset-0 px-4 md:px-8 lg:px-16 flex flex-col justify-between py-8">
           <Button asChild variant="outline" className="w-fit bg-black/35 text-white border-white/40 hover:bg-black/50">

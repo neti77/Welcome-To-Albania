@@ -24,7 +24,7 @@ export const CITIES: City[] = [
     name: "Tirana",
     description:
       "The vibrant capital city of Albania, known for its colorful architecture and lively atmosphere.",
-    image: "/src/assets/images/city-tirana.jpg",
+    image: "/src/assets/images/Tirana.jpeg",
     position: { top: "38%", left: "52%" },
     lat: 41.3275,
     lon: 19.8187,
@@ -44,7 +44,7 @@ export const CITIES: City[] = [
     name: "Vlorë",
     description:
       "Where the Adriatic meets the Ionian Sea. Vlorë is famous for its beautiful riviera and stunning beaches.",
-    image: "/src/assets/images/city-vlore.jpg",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Promenade_of_Vlor%C3%AB_along_the_Adriatic_Sea.jpg",
     position: { top: "70%", left: "35%" },
     lat: 40.4661,
     lon: 19.4914,
@@ -74,7 +74,7 @@ export const CITIES: City[] = [
     name: "Durrës",
     description:
       "Albania's main port and one of its oldest cities, Durrës boasts a large Roman amphitheater and popular beaches.",
-    image: "/src/assets/images/header-tirana-new.jpg",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Durr%C3%ABs%20seafront%20promenade%20(Albania)%2009.jpg",
     position: { top: "40%", left: "30%" },
     lat: 41.3236,
     lon: 19.4544,
@@ -84,7 +84,7 @@ export const CITIES: City[] = [
     name: "Korçë",
     description:
       "Known for its elegant old villas, cultural festivals, and nearby mountain landscapes, Korçë is one of Albania's most charming southeastern cities.",
-    image: "/src/assets/images/city-berat.jpg",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Kor%C3%A7aVonOben.JPG",
     position: { top: "78%", left: "72%" },
     lat: 40.6167,
     lon: 20.7833,

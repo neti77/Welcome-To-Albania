@@ -214,6 +214,8 @@ export default function HubPage() {
                   src={article.image}
                   alt={article.title}
                   className="h-40 w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <CardContent className="p-5 space-y-3">
                   <h3 className="text-lg font-semibold leading-snug">{article.title}</h3>
