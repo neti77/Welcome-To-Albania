@@ -1,11 +1,12 @@
-import { useState, useEffect, type FormEvent } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef, useLayoutEffect, type FormEvent } from "react";
+import { motion, AnimatePresence, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 import { ArrowDown, Sun, Compass, Camera, Landmark } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CITIES } from "@/data/cities";
 import { ALBANIA_MAP_PATH, projectAlbaniaPoint } from "@/data/albaniaMap";
+import { supabase } from "@/lib/supabase";
 
 const GUIDES = [
   { title: "Albanian Riviera", icon: Sun, description: "Crystal clear waters from Vlorë to Ksamil." },
@@ -15,8 +16,8 @@ const GUIDES = [
 ];
 
 const NAV_ITEMS = [
-  { label: "For Albanians", href: "/for-albanians" },
-  { label: "For Visitors", href: "/for-visitors" },
+  { label: "For Albanians", href: "/thashetheme-square" },
+  { label: "For Visitors", href: "/visitors-guide" },
   { label: "What's New", href: "/whats-new" },
   { label: "Plan Your Trip", href: "/plan-your-trip" },
 ];
@@ -48,21 +49,137 @@ const PLAN_VISIT_STEPS = [
   "Lock in local food spots and sunset viewpoints.",
 ];
 
+const DESTINATION_GALLERY = [
+  {
+    title: "Blue Eye",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Blue%20eye%20Albania%202018%205.jpg",
+  },
+  {
+    title: "Valbona River",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Valbona%20river.jpg",
+  },
+  {
+    title: "Ksamil Beach",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Ksamil%20beach.jpg",
+  },
+  {
+    title: "Rozafa Castle",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Wanderful%20Rozafa%20Castle%20in%20Shkod%C3%ABr%20Albania.jpg",
+  },
+  {
+    title: "Skanderbeg Monument",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Skanderbeg%20Monument%20in%20Tirana%2C%20Albania.jpg",
+  },
+  {
+    title: "Albanian Alps",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Albanian%20Alps%20from%20the%20sky.jpg",
+  },
+];
+
 const VINTAGE_GALLERY = [
-  "/src/assets/images/header-tirana.jpg",
+  "/src/assets/images/city-vlore.jpg",
   "/src/assets/images/city-shkoder.jpg",
   "/src/assets/images/city-berat.jpg",
 ];
 
 const IN_VIEW = { once: true, amount: 0.25 } as const;
+const HERO_SLIDES = [
+  "/src/assets/images/Tirana.jpeg",
+  "/src/assets/images/city-berat.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/f/f8/The_City_and_the_Prokletije_from_the_castle.jpg",
+];
+
+type DestinationItem = {
+  title: string;
+  image: string;
+};
+
+function DestinationCard({
+  item,
+  index,
+  total,
+  scrollXProgress,
+  className,
+  onRef,
+}: {
+  item: DestinationItem;
+  index: number;
+  total: number;
+  scrollXProgress: ReturnType<typeof useScroll>["scrollXProgress"];
+  className: string;
+  onRef: (node: HTMLDivElement | null) => void;
+}) {
+  const start = index / total;
+  const end = (index + 1) / total;
+  const center = (start + end) / 2;
+
+  const centerBand = 0.05;
+  const centerStart = Math.max(0, center );
+  const centerEnd = Math.min(1, center );
+
+  const scale = useTransform(scrollXProgress, [start, centerStart, centerEnd, end], [0.8, 1, 1, 0.8]);
+  const opacity = useTransform(scrollXProgress, [start, centerStart, centerEnd, end], [0.8, 1, 1, 0.8]);
+  const filter = useTransform(
+    scrollXProgress,
+    [start, centerStart, centerEnd, end],
+    [
+      "blur(5px) brightness(0.7)",
+      "blur(0px) brightness(1)",
+      "blur(0px) brightness(1)",
+      "blur(5px) brightness(0.7)",
+    ],
+  );
+
+  return (
+    <motion.div
+      className={className}
+      style={{ scale, opacity, filter, willChange: "transform, opacity, filter" }}
+      ref={onRef}
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={IN_VIEW}
+      transition={{ delay: index * 0.08 }}
+    >
+      <Card className="overflow-hidden h-full shadow-2xl border-white/10 bg-black/10">
+        <div className="relative">
+          <img
+            src={item.image}
+            alt={item.title}
+            className="h-[420px] sm:h-[480px] md:h-[600px] lg:h-[640px] w-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-4 pb-4 pt-10">
+            <h3 className="text-base sm:text-lg font-semibold text-white">{item.title}</h3>
+          </div>
+        </div>
+      </Card>
+    </motion.div>
+  );
+}
 
 export default function Home() {
   const [selectedCity, setSelectedCity] = useState(CITIES[1]);
   const [weather, setWeather] = useState<{ temp: number; symbol: string } | null>(null);
   const [showNavButtons, setShowNavButtons] = useState(true);
+  const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterMessage, setNewsletterMessage] = useState("");
   const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
+  const [newsletterHoneypot, setNewsletterHoneypot] = useState("");
+  const [newsletterFormStartedAt] = useState(() => Date.now());
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const destinationsRef = useRef<HTMLDivElement | null>(null);
+  const destinationCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [destinationContainerWidth, setDestinationContainerWidth] = useState(0);
+  const loopBoundsRef = useRef<{
+    minEdge: number;
+    maxEdge: number;
+    jumpToStart: number;
+    jumpToEnd: number;
+  } | null>(null);
+  const isJumpingRef = useRef(false);
+  const { scrollX, scrollXProgress } = useScroll({ container: destinationsRef });
   const [, navigate] = useLocation();
 
   // Weather Fetch Logic
@@ -104,12 +221,112 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scrollToExplore = () => {
-    document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" });
+  useEffect(() => {
+    if (!supabase) return;
+    void supabase.auth.getSession().then(({ data }) => {
+      setCurrentUserEmail(data.session?.user?.email ?? null);
+    });
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUserEmail(session?.user?.email ?? null);
+    });
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const loopedDestinations =
+    DESTINATION_GALLERY.length > 1
+      ? [
+          DESTINATION_GALLERY[DESTINATION_GALLERY.length - 1],
+          ...DESTINATION_GALLERY,
+          DESTINATION_GALLERY[0],
+        ]
+      : DESTINATION_GALLERY;
+
+  useLayoutEffect(() => {
+    const container = destinationsRef.current;
+    if (!container) return;
+
+    const measure = () => {
+      const items = destinationCardRefs.current.filter(Boolean) as HTMLDivElement[];
+      if (!items.length) return;
+      setDestinationContainerWidth(container.clientWidth);
+
+      if (DESTINATION_GALLERY.length > 1 && items.length > 2) {
+        const firstClone = items[0];
+        const lastClone = items[items.length - 1];
+        const firstReal = items[1];
+        const lastReal = items[items.length - 2];
+        loopBoundsRef.current = {
+          minEdge: firstClone.offsetLeft,
+          maxEdge: lastClone.offsetLeft + lastClone.offsetWidth,
+          jumpToStart: firstReal.offsetLeft - 20,
+          jumpToEnd: lastReal.offsetLeft - 20,
+        };
+        container.scrollTo({ left: firstReal.offsetLeft - 20, behavior: "instant" as ScrollBehavior });
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      measure();
+    });
+    resizeObserver.observe(container);
+    const readyTimer = window.setTimeout(measure, 200);
+
+    return () => {
+      window.clearTimeout(readyTimer);
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  useMotionValueEvent(scrollX, "change", (latest) => {
+    const bounds = loopBoundsRef.current;
+    if (!bounds || isJumpingRef.current || DESTINATION_GALLERY.length <= 1) return;
+    if (!destinationContainerWidth) return;
+    const buffer = 80;
+
+    if (latest + destinationContainerWidth >= bounds.maxEdge - buffer) {
+      const container = destinationsRef.current;
+      if (!container) return;
+      isJumpingRef.current = true;
+      const previousSnap = container.style.scrollSnapType;
+      container.style.scrollSnapType = "none";
+      container.scrollTo({ left: bounds.jumpToStart, behavior: "instant" as ScrollBehavior });
+      window.requestAnimationFrame(() => {
+        container.style.scrollSnapType = previousSnap || "x mandatory";
+        isJumpingRef.current = false;
+      });
+    } else if (latest <= bounds.minEdge + buffer) {
+      const container = destinationsRef.current;
+      if (!container) return;
+      isJumpingRef.current = true;
+      const previousSnap = container.style.scrollSnapType;
+      container.style.scrollSnapType = "none";
+      container.scrollTo({ left: bounds.jumpToEnd, behavior: "instant" as ScrollBehavior });
+      window.requestAnimationFrame(() => {
+        container.style.scrollSnapType = previousSnap || "x mandatory";
+        isJumpingRef.current = false;
+      });
+    }
+  });
+
+  const cycleHeroBackground = () => {
+    setHeroSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
   };
 
   const onNewsletterSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (newsletterHoneypot.trim()) {
+      setNewsletterMessage("Thanks for joining. You're on the list.");
+      return;
+    }
+
+    const submittedAfterMs = Date.now() - newsletterFormStartedAt;
+    if (submittedAfterMs < 1200) {
+      setNewsletterMessage("Could not subscribe right now. Please try again.");
+      return;
+    }
 
     const email = newsletterEmail.trim();
     if (!email) {
@@ -124,7 +341,11 @@ export default function Home() {
       const response = await fetch("/api/newsletter/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          website: newsletterHoneypot,
+          submittedAfterMs,
+        }),
       });
 
       if (!response.ok) {
@@ -147,16 +368,62 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative h-screen w-full overflow-hidden flex flex-col items-center justify-center text-white">
         <div className="absolute inset-0 z-0">
-          <img 
-            src="/src/assets/images/header-tirana-new.jpg" 
-            alt="Tirana Skyline" 
-            className="w-full h-full object-cover brightness-[0.6]"
-          />
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={HERO_SLIDES[heroSlideIndex]}
+              src={HERO_SLIDES[heroSlideIndex]}
+              alt="Albania destination slideshow"
+              className="w-full h-full object-cover brightness-[0.6]"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.9, ease: "easeInOut" }}
+            />
+          </AnimatePresence>
           <div className="absolute inset-0 bg-black/40" />
         </div>
 
         <div
-          className={`absolute top-5 left-4 md:left-8 lg:left-16 z-20 transition-all duration-300 ${
+          className={`absolute top-5 left-4 right-4 z-20 transition-all duration-300 md:hidden ${
+            showNavButtons ? "translate-x-0 opacity-100" : "-translate-x-[120%] opacity-0 pointer-events-none"
+          }`}
+        >
+          <nav
+            className="flex items-center gap-2 overflow-x-auto whitespace-nowrap rounded-full border border-white/35 bg-black/35 backdrop-blur-md px-3 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="shrink-0 text-white/90 hover:text-white transition-colors border border-white/25 rounded-full px-3 py-1.5 text-xs"
+              >
+                {item.label}
+              </Link>
+            ))}
+            {currentUserEmail ? (
+              <Link
+                href="/profile"
+                className="shrink-0 text-white/90 hover:text-white transition-colors border border-white/25 rounded-full px-3 py-1.5 text-xs"
+              >
+                Profile
+              </Link>
+            ) : (
+              <Link
+                href="/auth"
+                className="shrink-0 text-white/90 hover:text-white transition-colors border border-white/25 rounded-full px-3 py-1.5 text-xs"
+              >
+                Sign In
+              </Link>
+            )}
+          </nav>
+        </div>
+
+        <div
+          className={`absolute top-5 left-4 md:left-8 lg:left-16 z-20 transition-all duration-300 hidden md:block ${
             showNavButtons ? "translate-x-0 opacity-100" : "-translate-x-[120%] opacity-0 pointer-events-none"
           }`}
         >
@@ -174,23 +441,26 @@ export default function Home() {
         </div>
 
         <div
-          className={`absolute top-5 right-4 md:right-8 lg:right-16 z-20 transition-all duration-300 ${
+          className={`absolute top-5 right-4 md:right-8 lg:right-16 z-20 transition-all duration-300 hidden md:block ${
             showNavButtons ? "translate-x-0 opacity-100" : "translate-x-[120%] opacity-0 pointer-events-none"
           }`}
         >
           <div className="flex items-center gap-2">
-            <Link
-              href="/sign-in"
-              className="text-white/90 hover:text-white transition-colors border border-white/35 bg-black/35 backdrop-blur-md rounded-full px-4 py-2 text-xs md:text-sm"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/sign-up"
-              className="text-white/90 hover:text-white transition-colors border border-white/35 bg-black/35 backdrop-blur-md rounded-full px-4 py-2 text-xs md:text-sm"
-            >
-              Sign Up
-            </Link>
+            {currentUserEmail ? (
+              <Link
+                href="/profile"
+                className="text-white/90 hover:text-white transition-colors border border-white/35 bg-black/35 backdrop-blur-md rounded-full px-4 py-2 text-xs md:text-sm"
+              >
+                Profile
+              </Link>
+            ) : (
+              <Link
+                href="/auth"
+                className="text-white/90 hover:text-white transition-colors border border-white/35 bg-black/35 backdrop-blur-md rounded-full px-4 py-2 text-xs md:text-sm"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
         
@@ -202,8 +472,8 @@ export default function Home() {
           >
             Welcome to <span className="text-primary">Albania</span>
           </motion.h1>
-          <Button onClick={scrollToExplore} className="bg-primary rounded-full px-8 py-6">
-            Start Your Journey
+          <Button onClick={cycleHeroBackground} className="bg-primary rounded-full px-8 py-6">
+            Explore
           </Button>
         </div>
 
@@ -218,7 +488,7 @@ export default function Home() {
           
           {/* Left: City Info Card */}
           <div className="w-full lg:w-[42%]">
-            <h2 className="text-4xl font-serif font-bold mb-7 text-foreground">Destinations</h2>
+            <h2 className="text-4xl font-serif font-bold mb-7 text-foreground">Cities</h2>
             <AnimatePresence mode="wait">
               <motion.div
                 key={selectedCity.id}
@@ -227,7 +497,13 @@ export default function Home() {
                 exit={{ opacity: 0, x: 20 }}
                 className="bg-card rounded-2xl overflow-hidden shadow-xl border border-border relative"
               >
-                <img src={selectedCity.image} className="h-60 md:h-72 w-full object-cover" alt={selectedCity.name} />
+                <img
+                  src={selectedCity.image}
+                  className="h-60 md:h-72 w-full object-cover"
+                  alt={selectedCity.name}
+                  loading="lazy"
+                  decoding="async"
+                />
                 
                 {/* Weather Badge - This is where the weather shows up! */}
                {weather ? (
@@ -354,8 +630,10 @@ export default function Home() {
                   src={dish.image}
                   alt={dish.title}
                   className="h-52 w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                   onError={(event) => {
-                    event.currentTarget.src = "/src/assets/images/header-tirana-new.jpg";
+                    event.currentTarget.src = "/src/assets/images/Tirana.jpeg";
                   }}
                 />
                 <CardContent className="p-5">
@@ -372,6 +650,50 @@ export default function Home() {
                 </CardContent>
               </Card>
               </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-24 px-4 md:px-8 lg:px-16 bg-secondary/10">
+        <div className="max-w-7xl mx-auto">
+          <motion.h2
+            className="text-3xl md:text-4xl font-serif font-bold mb-3"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={IN_VIEW}
+          >
+            Destinations
+          </motion.h2>
+          <motion.p
+            className="text-muted-foreground mb-8 max-w-3xl"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={IN_VIEW}
+            transition={{ delay: 0.08 }}
+          >
+            Explore main destinations and see what people said about them.
+          </motion.p>
+          <div
+            ref={destinationsRef}
+            className="flex overflow-x-auto pb-12 pt-6 snap-x snap-mandatory scroll-smooth overflow-y-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {loopedDestinations.map((item, index) => (
+              <DestinationCard
+                key={`${item.title}-${index}`}
+                item={item}
+                index={index}
+                total={loopedDestinations.length}
+                scrollXProgress={scrollXProgress}
+                className={`snap-center min-w-[300px] md:min-w-[420px] -ml-12 md:-ml-20 first:ml-0 transition-none ${
+                  index === 0 ? "ml-4 md:ml-8" : ""
+                }`}
+                onRef={(node) => {
+                  if (node) {
+                    destinationCardRefs.current[index] = node;
+                  }
+                }}
+              />
             ))}
           </div>
         </div>
@@ -411,7 +733,12 @@ export default function Home() {
 
       <section className="py-24 px-4 md:px-8 lg:px-16 bg-background">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-10">Plan Your Visit</h2>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold">Plan Your Visit</h2>
+            <Button asChild className="w-fit">
+              <Link href="/plan-your-trip">Plan the trip</Link>
+            </Button>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
             <div className="relative pl-10">
               <motion.div
@@ -446,6 +773,8 @@ export default function Home() {
                   src={image}
                   alt={`Albania travel memory ${index + 1}`}
                   className="absolute w-[68%] h-[48%] object-cover rounded-md border border-white/20 shadow-xl"
+                  loading="lazy"
+                  decoding="async"
                   style={{
                     top: `${index * 22}%`,
                     left: `${index * 13}%`,
@@ -459,6 +788,56 @@ export default function Home() {
                 />
               ))}
             </div>
+          </div>
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card>
+              <CardContent className="p-6 space-y-3">
+                <h3 className="text-xl font-semibold">Hotels</h3>
+                <p className="text-sm text-muted-foreground">
+                  Book boutique stays or larger resorts based on your route.
+                </p>
+                <a
+                  href="https://www.booking.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm underline underline-offset-2"
+                >
+                  Browse hotels
+                </a>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6 space-y-3">
+                <h3 className="text-xl font-semibold">Airbnb</h3>
+                <p className="text-sm text-muted-foreground">
+                  Find local apartments and seaside rentals.
+                </p>
+                <a
+                  href="https://www.airbnb.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm underline underline-offset-2"
+                >
+                  Rent an Airbnb
+                </a>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6 space-y-3">
+                <h3 className="text-xl font-semibold">Car Rental</h3>
+                <p className="text-sm text-muted-foreground">
+                  Best for coast-to-mountain routes and flexible day trips.
+                </p>
+                <a
+                  href="https://www.rentalcars.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm underline underline-offset-2"
+                >
+                  Compare rentals
+                </a>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
@@ -475,22 +854,25 @@ export default function Home() {
           </div>
 
           <div>
-            <h4 className="font-bold mb-4 uppercase text-xs tracking-widest text-primary">Explore</h4>
+            <h4 className="font-bold mb-4 uppercase text-xs text-primary">Explore</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li className="hover:text-white transition-colors cursor-pointer">The Riviera</li>
               <li className="hover:text-white transition-colors cursor-pointer">Mountain Trails</li>
               <li className="hover:text-white transition-colors cursor-pointer">Local Cuisine</li>
             </ul>
-            <h4 className="font-bold mt-6 mb-3 uppercase text-xs tracking-widest text-primary">Admin</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
+              <h5 className="font-bold mt-6 mb-3 uppercase text-xs text-primary">Admin</h5>
+            <ul className="space-y-0 space-x-0 text-sm text-gray-400">
               <li>
                 <Link href="/admin/login" className="hover:text-white transition-colors">
                   Admin
                 </Link>
               </li>
             </ul>
-          </div>
-
+            </div>
+          
+          
+                  
+             
           <div>
             <h4 className="font-bold mb-4 uppercase text-xs tracking-widest text-primary">Live Status</h4>
             <div className="text-sm text-gray-400">
@@ -509,6 +891,15 @@ export default function Home() {
                 value={newsletterEmail}
                 onChange={(event) => setNewsletterEmail(event.target.value)}
                 className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-primary"
+              />
+              <input
+                type="text"
+                value={newsletterHoneypot}
+                onChange={(event) => setNewsletterHoneypot(event.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                className="hidden"
+                aria-hidden="true"
               />
               <Button
                 type="submit"
@@ -529,8 +920,15 @@ export default function Home() {
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-gray-500 uppercase tracking-widest">
           <p>© {new Date().getFullYear()} Visit Albania. All rights reserved.</p>
           <div className="flex gap-6">
-            <span className="hover:text-white cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-white cursor-pointer">Terms of Service</span>
+            <Link href="/legal#privacy" className="hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/legal#terms" className="hover:text-white transition-colors">
+              Terms of Service
+            </Link>
+            <Link href="/about" className="hover:text-white transition-colors">
+              About Us
+            </Link>
           </div>
         </div>
       </footer>

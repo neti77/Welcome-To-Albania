@@ -14,7 +14,7 @@ export const CITIES: City[] = [
     name: "Shkodër",
     description:
       "One of the oldest and most historic places in Albania, Shkodër is a cultural center featuring the legendary Rozafa Castle.",
-    image: "/src/assets/images/city-shkoder.jpg",
+    image: "https://upload.wikimedia.org/wikipedia/commons/f/f8/The_City_and_the_Prokletije_from_the_castle.jpg",
     position: { top: "14%", left: "42%" },
     lat: 42.0675,
     lon: 19.5141,
@@ -24,7 +24,7 @@ export const CITIES: City[] = [
     name: "Tirana",
     description:
       "The vibrant capital city of Albania, known for its colorful architecture and lively atmosphere.",
-    image: "/src/assets/images/city-tirana.jpg",
+    image: "/src/assets/images/Tirana.jpeg",
     position: { top: "38%", left: "52%" },
     lat: 41.3275,
     lon: 19.8187,
@@ -44,7 +44,7 @@ export const CITIES: City[] = [
     name: "Vlorë",
     description:
       "Where the Adriatic meets the Ionian Sea. Vlorë is famous for its beautiful riviera and stunning beaches.",
-    image: "/src/assets/images/city-vlore.jpg",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Promenade_of_Vlor%C3%AB_along_the_Adriatic_Sea.jpg",
     position: { top: "70%", left: "35%" },
     lat: 40.4661,
     lon: 19.4914,
@@ -54,7 +54,7 @@ export const CITIES: City[] = [
     name: "Gjirokastër",
     description:
       "A magical 'City of Stone' with steep cobblestone streets and a massive fortress.",
-    image: "/src/assets/images/city-gjirokaster.jpg",
+    image: "https://upload.wikimedia.org/wikipedia/commons/1/16/Gjirokaster_2016-2017.jpg",
     position: { top: "84%", left: "60%" },
     lat: 40.0758,
     lon: 20.1389,
@@ -64,7 +64,7 @@ export const CITIES: City[] = [
     name: "Kukës",
     description:
       "Located in the mountainous north, Kukës is known for its dramatic landscapes and the artificial lake Fierza.",
-    image: "/src/assets/images/header-tirana.jpg",
+    image: "https://euronews.al/en/wp-content/uploads/2024/02/kukes-albania.webp",
     position: { top: "20%", left: "75%" },
     lat: 42.0769,
     lon: 20.4217,
@@ -74,7 +74,7 @@ export const CITIES: City[] = [
     name: "Durrës",
     description:
       "Albania's main port and one of its oldest cities, Durrës boasts a large Roman amphitheater and popular beaches.",
-    image: "/src/assets/images/header-tirana-new.jpg",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Durr%C3%ABs%20seafront%20promenade%20(Albania)%2009.jpg",
     position: { top: "40%", left: "30%" },
     lat: 41.3236,
     lon: 19.4544,
@@ -84,7 +84,7 @@ export const CITIES: City[] = [
     name: "Korçë",
     description:
       "Known for its elegant old villas, cultural festivals, and nearby mountain landscapes, Korçë is one of Albania's most charming southeastern cities.",
-    image: "/src/assets/images/city-berat.jpg",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Kor%C3%A7aVonOben.JPG",
     position: { top: "78%", left: "72%" },
     lat: 40.6167,
     lon: 20.7833,
@@ -94,7 +94,7 @@ export const CITIES: City[] = [
     name: "Tropojë",
     description:
       "A gateway to dramatic alpine valleys and the Valbona region, Tropojë is a top destination for mountain trekking and nature escapes.",
-    image: "/src/assets/images/city-shkoder.jpg",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Valbona%20Village.jpg",
     position: { top: "9%", left: "63%" },
     lat: 42.3573,
     lon: 20.0768,

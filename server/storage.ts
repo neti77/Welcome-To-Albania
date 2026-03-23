@@ -5,6 +5,8 @@ import {
   type InsertNewsletterSubscriber,
   type NewsletterInboxItem,
   type InsertNewsletterInboxItem,
+  type NewsItem,
+  type InsertNewsItem,
 } from "@shared/schema";
 import {
   randomUUID,
@@ -35,6 +37,10 @@ export interface IStorage {
   ): Promise<NewsletterInboxItem>;
   listNewsletterInboxItems(): Promise<NewsletterInboxItem[]>;
   markNewsletterInboxItemSent(id: string): Promise<NewsletterInboxItem | null>;
+  listNewsItems(): Promise<NewsItem[]>;
+  createNewsItem(input: InsertNewsItem): Promise<NewsItem>;
+  updateNewsItemStatus(id: string, status: NewsItem["status"]): Promise<NewsItem | null>;
+  deleteNewsItem(id: string): Promise<boolean>;
 }
 
 type StoredNewsletterSubscriber = {
@@ -48,17 +54,22 @@ export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private newsletterSubscribers: Map<string, StoredNewsletterSubscriber>;
   private newsletterInboxItems: Map<string, NewsletterInboxItem>;
+  private newsItems: Map<string, NewsItem>;
   private newsletterLoaded: boolean;
   private newsletterInboxLoaded: boolean;
+  private newsLoaded: boolean;
   private newsletterFilePath: string;
   private newsletterInboxFilePath: string;
+  private newsFilePath: string;
 
   constructor() {
     this.users = new Map();
     this.newsletterSubscribers = new Map();
     this.newsletterInboxItems = new Map();
+    this.newsItems = new Map();
     this.newsletterLoaded = false;
     this.newsletterInboxLoaded = false;
+    this.newsLoaded = false;
     this.newsletterFilePath = path.resolve(
       process.cwd(),
       "server/data/newsletter-subscribers.secure.json",
@@ -66,6 +77,10 @@ export class MemStorage implements IStorage {
     this.newsletterInboxFilePath = path.resolve(
       process.cwd(),
       "server/data/newsletter-inbox.json",
+    );
+    this.newsFilePath = path.resolve(
+      process.cwd(),
+      "server/data/news-items.json",
     );
   }
 
@@ -193,6 +208,38 @@ export class MemStorage implements IStorage {
     this.newsletterInboxLoaded = true;
   }
 
+  private async ensureNewsLoaded() {
+    if (this.newsLoaded) return;
+
+    await fs.mkdir(path.dirname(this.newsFilePath), { recursive: true });
+
+    try {
+      const raw = await fs.readFile(this.newsFilePath, "utf8");
+      const parsed = JSON.parse(raw) as NewsItem[];
+      let migrated = false;
+      for (const item of parsed) {
+        const normalized: NewsItem = {
+          ...item,
+          status: item.status ?? "published",
+        };
+        if (!item.status) migrated = true;
+        this.newsItems.set(item.id, normalized);
+      }
+      if (migrated) await this.persistNewsItems();
+    } catch (error: unknown) {
+      const fileMissing =
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code?: string }).code === "ENOENT";
+
+      if (!fileMissing) throw error;
+      await this.persistNewsItems();
+    }
+
+    this.newsLoaded = true;
+  }
+
   private async persistNewsletterInboxItems() {
     const data = JSON.stringify(
       Array.from(this.newsletterInboxItems.values()),
@@ -201,6 +248,11 @@ export class MemStorage implements IStorage {
     );
 
     await fs.writeFile(this.newsletterInboxFilePath, data, "utf8");
+  }
+
+  private async persistNewsItems() {
+    const data = JSON.stringify(Array.from(this.newsItems.values()), null, 2);
+    await fs.writeFile(this.newsFilePath, data, "utf8");
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -325,6 +377,50 @@ export class MemStorage implements IStorage {
     this.newsletterInboxItems.set(updated.id, updated);
     await this.persistNewsletterInboxItems();
     return updated;
+  }
+
+  async listNewsItems(): Promise<NewsItem[]> {
+    await this.ensureNewsLoaded();
+    return Array.from(this.newsItems.values()).sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
+  }
+
+  async createNewsItem(input: InsertNewsItem): Promise<NewsItem> {
+    await this.ensureNewsLoaded();
+    const item: NewsItem = {
+      id: randomUUID(),
+      title: input.title.trim(),
+      description: input.description.trim(),
+      imageUrl: input.imageUrl.trim(),
+      status: input.status ?? "draft",
+      createdAt: new Date().toISOString(),
+    };
+    this.newsItems.set(item.id, item);
+    await this.persistNewsItems();
+    return item;
+  }
+
+  async updateNewsItemStatus(
+    id: string,
+    status: NewsItem["status"],
+  ): Promise<NewsItem | null> {
+    await this.ensureNewsLoaded();
+    const existing = this.newsItems.get(id);
+    if (!existing) return null;
+    const updated: NewsItem = { ...existing, status };
+    this.newsItems.set(id, updated);
+    await this.persistNewsItems();
+    return updated;
+  }
+
+  async deleteNewsItem(id: string): Promise<boolean> {
+    await this.ensureNewsLoaded();
+    const exists = this.newsItems.has(id);
+    if (!exists) return false;
+    this.newsItems.delete(id);
+    await this.persistNewsItems();
+    return true;
   }
 }
 

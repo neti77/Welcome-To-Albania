@@ -4,7 +4,10 @@ import { storage } from "./storage";
 import {
   insertNewsletterSubscriberSchema,
   insertNewsletterInboxItemSchema,
+  insertNewsItemSchema,
 } from "@shared/schema";
+
+const newsletterRateLimit = new Map<string, number[]>();
 
 export async function registerRoutes(
   httpServer: Server,
@@ -44,6 +47,35 @@ export async function registerRoutes(
 
   app.post("/api/newsletter/subscribe", async (req, res, next) => {
     try {
+      const honeypot = String(req.body?.website ?? "").trim();
+      if (honeypot) {
+        return res.status(200).json({ message: "Subscription saved successfully." });
+      }
+
+      const submittedAfterMs = Number(req.body?.submittedAfterMs ?? 0);
+      if (!Number.isFinite(submittedAfterMs) || submittedAfterMs < 1200) {
+        return res.status(400).json({
+          message: "Please try again.",
+        });
+      }
+
+      const rawIp =
+        ((req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0] ??
+          req.ip ??
+          "unknown").trim();
+      const now = Date.now();
+      const windowMs = 10 * 60 * 1000;
+      const maxRequestsPerWindow = 6;
+      const existingRequests = newsletterRateLimit.get(rawIp) ?? [];
+      const recent = existingRequests.filter((ts) => now - ts < windowMs);
+      if (recent.length >= maxRequestsPerWindow) {
+        return res.status(429).json({
+          message: "Too many requests. Please try again later.",
+        });
+      }
+      recent.push(now);
+      newsletterRateLimit.set(rawIp, recent);
+
       const parsed = insertNewsletterSubscriberSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({
@@ -137,6 +169,93 @@ export async function registerRoutes(
         recipientCount: recipients.length,
         recipients,
       });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.get("/api/news", async (req, res, next) => {
+    try {
+      const items = await storage.listNewsItems();
+      const published = items.filter((item) => item.status === "published");
+      return res.status(200).json({ count: published.length, items: published });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.get("/api/admin/news", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const items = await storage.listNewsItems();
+      return res.status(200).json({ count: items.length, items });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/admin/news", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const parsed = insertNewsItemSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Title, description, and image URL are required." });
+      }
+
+      const item = await storage.createNewsItem(parsed.data);
+      return res.status(201).json({ message: "News saved.", item });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/admin/news/:id/publish", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const item = await storage.updateNewsItemStatus(req.params.id, "published");
+      if (!item) {
+        return res.status(404).json({ message: "News post not found." });
+      }
+
+      return res.status(200).json({ message: "News published.", item });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.post("/api/admin/news/:id/unpublish", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const item = await storage.updateNewsItemStatus(req.params.id, "draft");
+      if (!item) {
+        return res.status(404).json({ message: "News post not found." });
+      }
+
+      return res.status(200).json({ message: "News moved to drafts.", item });
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.delete("/api/admin/news/:id", async (req, res, next) => {
+    try {
+      const auth = requireAdminToken(req.headers["x-admin-token"] as string | undefined);
+      if (!auth.ok) return res.status(auth.status).json({ message: auth.message });
+
+      const deleted = await storage.deleteNewsItem(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "News post not found." });
+      }
+
+      return res.status(200).json({ message: "News deleted." });
     } catch (error) {
       return next(error);
     }
