@@ -506,7 +506,12 @@ export default function Home() {
 
       <section className="py-24 px-4 md:px-8 lg:px-16 bg-background">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-10">Plan Your Visit</h2>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold">Plan Your Visit</h2>
+            <Button asChild className="w-fit">
+              <Link href="/plan-your-trip">Plan the trip</Link>
+            </Button>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
             <div className="relative pl-10">
               <motion.div
@@ -556,6 +561,56 @@ export default function Home() {
                 />
               ))}
             </div>
+          </div>
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card>
+              <CardContent className="p-6 space-y-3">
+                <h3 className="text-xl font-semibold">Hotels</h3>
+                <p className="text-sm text-muted-foreground">
+                  Book boutique stays or larger resorts based on your route.
+                </p>
+                <a
+                  href="https://www.booking.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm underline underline-offset-2"
+                >
+                  Browse hotels
+                </a>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6 space-y-3">
+                <h3 className="text-xl font-semibold">Airbnb</h3>
+                <p className="text-sm text-muted-foreground">
+                  Find local apartments and seaside rentals.
+                </p>
+                <a
+                  href="https://www.airbnb.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm underline underline-offset-2"
+                >
+                  Rent an Airbnb
+                </a>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6 space-y-3">
+                <h3 className="text-xl font-semibold">Car Rental</h3>
+                <p className="text-sm text-muted-foreground">
+                  Best for coast-to-mountain routes and flexible day trips.
+                </p>
+                <a
+                  href="https://www.rentalcars.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm underline underline-offset-2"
+                >
+                  Compare rentals
+                </a>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>

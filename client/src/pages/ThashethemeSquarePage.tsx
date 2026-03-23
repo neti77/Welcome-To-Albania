@@ -69,111 +69,33 @@ export default function ThashethemeSquarePage() {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
-  const [commentsHasMore, setCommentsHasMore] = useState(true);
-  const [commentsPageSize] = useState(30);
-  const [minimumCommentsToShow, setMinimumCommentsToShow] = useState(10);
   const [commentsStatus, setCommentsStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
-  const [commentsRetryTick, setCommentsRetryTick] = useState(0);
   const [replyTarget, setReplyTarget] = useState<NewsComment | null>(null);
-  const commentsCacheTtlMs = 5 * 60 * 1000;
 
-  const loadComments = async (newsId: string, offset = 0, append = false) => {
+  const loadComments = async (newsId: string) => {
     const supabaseClient = supabase;
     if (!supabaseClient) return;
-    const existing = comments;
-    const fetchWithColumns = (columns: string) =>
-      supabaseClient
-        .from("news_comments")
-        .select(columns)
-        .eq("news_id", newsId)
-        .order("created_at", { ascending: false })
-        .range(offset, offset + commentsPageSize - 1);
-
-    if (!append && offset === 0) {
-      try {
-        const cacheKey = `news_comments_cache_${newsId}`;
-        const cachedRaw = window.localStorage.getItem(cacheKey);
-        if (cachedRaw) {
-          const cached = JSON.parse(cachedRaw) as {
-            updatedAt: number;
-            comments: NewsComment[];
-          };
-          if (Date.now() - cached.updatedAt < commentsCacheTtlMs) {
-            setComments(cached.comments);
-            setCommentsStatus("ready");
-          }
-        }
-      } catch {
-        // ignore cache errors
-      }
-    }
 
     setCommentsLoading(true);
     setCommentsStatus("loading");
-    const { data, error } = await fetchWithColumns(
-      "id, news_id, author_email, author_name, reply_to_comment_id, reply_to_email, reply_to_name, reply_to_preview, content, created_at",
-    );
+    const { data, error } = await supabaseClient
+      .from("news_comments")
+      .select(
+        "id, news_id, author_email, author_name, reply_to_comment_id, reply_to_email, reply_to_name, reply_to_preview, content, created_at",
+      )
+      .eq("news_id", newsId)
+      .order("created_at", { ascending: false })
+      .limit(10);
 
-    if (!error && data) {
-      const batch = data as unknown as NewsComment[];
-      const ordered = batch.slice().reverse();
-      const merged = append ? [...ordered, ...existing] : ordered;
-      setComments(merged);
-      setCommentsHasMore(batch.length === commentsPageSize);
-      if (!append && ordered.length < minimumCommentsToShow && batch.length > 0 && offset === 0) {
-        void loadComments(newsId, ordered.length, true);
-      } else {
-        setCommentsStatus("ready");
-      }
-      try {
-        if (!append && offset === 0) {
-          const cacheKey = `news_comments_cache_${newsId}`;
-          window.localStorage.setItem(
-            cacheKey,
-            JSON.stringify({ updatedAt: Date.now(), comments: merged }),
-          );
-        }
-      } catch {
-        // ignore cache errors
-      }
+    if (error) {
+      setCommentsStatus("error");
       setCommentsLoading(false);
       return;
     }
 
-    const needsFallback =
-      typeof error.message === "string" &&
-      (error.message.includes("author_name") || error.message.includes("reply_to"));
-    if (!needsFallback) return;
-
-    const fallback = await fetchWithColumns(
-      "id, news_id, author_email, content, created_at",
-    );
-    if (!fallback.error && fallback.data) {
-      const batch = fallback.data as unknown as NewsComment[];
-      const ordered = batch.slice().reverse();
-      const merged = append ? [...ordered, ...existing] : ordered;
-      setComments(merged);
-      setCommentsHasMore(batch.length === commentsPageSize);
-      if (!append && ordered.length < minimumCommentsToShow && batch.length > 0 && offset === 0) {
-        void loadComments(newsId, ordered.length, true);
-      } else {
-        setCommentsStatus("ready");
-      }
-      try {
-        if (!append && offset === 0) {
-          const cacheKey = `news_comments_cache_${newsId}`;
-          window.localStorage.setItem(
-            cacheKey,
-            JSON.stringify({ updatedAt: Date.now(), comments: merged }),
-          );
-        }
-      } catch {
-        // ignore cache errors
-      }
-      setCommentsLoading(false);
-      return;
-    }
-    setCommentsStatus("error");
+    const ordered = (data ?? []).slice().reverse();
+    setComments(ordered as unknown as NewsComment[]);
+    setCommentsStatus("ready");
     setCommentsLoading(false);
   };
 
@@ -185,7 +107,10 @@ export default function ThashethemeSquarePage() {
         const items = Array.isArray(data?.items) ? (data.items as NewsItem[]) : [];
         if (items.length) {
           setNewsItems(items);
-          setSelectedNews(items[0]);
+          setSelectedNews((current) => {
+            const stillExists = items.find((item) => item.id === current.id);
+            return stillExists ?? items[0];
+          });
         }
       } catch {
         setNewsItems(DEFAULT_NEWS_ITEMS);
@@ -197,37 +122,11 @@ export default function ThashethemeSquarePage() {
   useEffect(() => {
     if (selectedNews?.id) {
       setComments([]);
-      setCommentsHasMore(true);
       setCommentsStatus("loading");
       setReplyTarget(null);
-      void loadComments(selectedNews.id, 0, false);
+      void loadComments(selectedNews.id);
     }
   }, [selectedNews?.id]);
-
-  useEffect(() => {
-    if (!selectedNews?.id) return;
-    if (comments.length >= minimumCommentsToShow || (!commentsHasMore && comments.length > 0)) {
-      setCommentsStatus("ready");
-    }
-  }, [comments.length, commentsHasMore, minimumCommentsToShow, selectedNews?.id]);
-
-  useEffect(() => {
-    if (!selectedNews?.id || commentsStatus !== "error") return;
-    const timer = window.setTimeout(() => {
-      setCommentsRetryTick((tick) => tick + 1);
-    }, 3000);
-    return () => window.clearTimeout(timer);
-  }, [commentsStatus, selectedNews?.id]);
-
-  useEffect(() => {
-    if (!selectedNews?.id || commentsStatus !== "error") return;
-    void loadComments(selectedNews.id, 0, false);
-  }, [commentsRetryTick, commentsStatus, selectedNews?.id]);
-
-  const loadMoreComments = async () => {
-    if (!selectedNews?.id || commentsLoading || !commentsHasMore) return;
-    await loadComments(selectedNews.id, comments.length, true);
-  };
 
   useEffect(() => {
     if (!supabase) return;
@@ -257,12 +156,7 @@ export default function ThashethemeSquarePage() {
         },
         (payload) => {
           const next = payload.new as NewsComment;
-          setComments((current) => {
-            if (current.some((comment) => comment.id === next.id)) {
-              return current;
-            }
-            return [...current, next];
-          });
+          setComments((current) => [...current, next]);
         }
       )
       .subscribe();
@@ -463,19 +357,7 @@ export default function ThashethemeSquarePage() {
                   )}
                   {commentsStatus === "error" && (
                     <div className="text-xs text-muted-foreground">
-                      Reconnecting… Retrying now.
-                    </div>
-                  )}
-                  {commentsHasMore && (
-                    <div className="flex justify-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={loadMoreComments}
-                        disabled={commentsLoading}
-                      >
-                        {commentsLoading ? "Loading..." : "Load older messages"}
-                      </Button>
+                      Could not load comments. Retrying now.
                     </div>
                   )}
                   {comments.map((comment) => {
@@ -527,7 +409,7 @@ export default function ThashethemeSquarePage() {
                     </div>
                   )}
                   <div ref={messagesEndRef} />
-                  {!comments.length && commentsStatus !== "loading" && (
+                  {!comments.length && commentsStatus === "ready" && (
                     <p className="text-sm text-muted-foreground">No comments yet.</p>
                   )}
                 </div>

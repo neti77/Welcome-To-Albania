@@ -61,7 +61,6 @@ export default function CityDetails() {
           };
           if (Date.now() - cached.updatedAt < commentsCacheTtlMs) {
             setComments(cached.comments);
-            setCommentsStatus("ready");
           }
         }
       } catch {
@@ -99,7 +98,11 @@ export default function CityDetails() {
     const needsFallback =
       typeof error.message === "string" &&
       (error.message.includes("author_name") || error.message.includes("reply_to"));
-    if (!needsFallback) return;
+    if (!needsFallback) {
+      setCommentsStatus("error");
+      setCommentsLoading(false);
+      return;
+    }
 
     const fallback = await fetchWithColumns(
       "id, city_id, author_email, content, created_at",
@@ -145,6 +148,13 @@ export default function CityDetails() {
     }, 3000);
     return () => window.clearTimeout(timer);
   }, [commentsStatus, city?.id]);
+
+  useEffect(() => {
+    if (!city?.id) return;
+    if (!commentsLoading && commentsStatus !== "error") {
+      setCommentsStatus("ready");
+    }
+  }, [commentsLoading, commentsStatus, city?.id]);
 
   useEffect(() => {
     if (!city?.id || commentsStatus !== "error") return;
@@ -383,7 +393,9 @@ export default function CityDetails() {
                   <p className="text-xs text-muted-foreground">Loading comments…</p>
                 )}
                 {commentsStatus === "error" && (
-                  <p className="text-xs text-muted-foreground">Reconnecting…</p>
+                  <p className="text-xs text-muted-foreground">
+                    Could not load comments. Retrying now.
+                  </p>
                 )}
                 {commentsHasMore && (
                   <Button
