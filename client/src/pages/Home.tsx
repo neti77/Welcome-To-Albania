@@ -1,5 +1,5 @@
-import { useState, useEffect, type FormEvent } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef, useLayoutEffect, type FormEvent } from "react";
+import { motion, AnimatePresence, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 import { ArrowDown, Sun, Compass, Camera, Landmark } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,33 @@ const PLAN_VISIT_STEPS = [
   "Lock in local food spots and sunset viewpoints.",
 ];
 
+const DESTINATION_GALLERY = [
+  {
+    title: "Blue Eye",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Blue%20eye%20Albania%202018%205.jpg",
+  },
+  {
+    title: "Valbona River",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Valbona%20river.jpg",
+  },
+  {
+    title: "Ksamil Beach",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Ksamil%20beach.jpg",
+  },
+  {
+    title: "Rozafa Castle",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Wanderful%20Rozafa%20Castle%20in%20Shkod%C3%ABr%20Albania.jpg",
+  },
+  {
+    title: "Skanderbeg Monument",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Skanderbeg%20Monument%20in%20Tirana%2C%20Albania.jpg",
+  },
+  {
+    title: "Albanian Alps",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Albanian%20Alps%20from%20the%20sky.jpg",
+  },
+];
+
 const VINTAGE_GALLERY = [
   "/src/assets/images/city-vlore.jpg",
   "/src/assets/images/city-shkoder.jpg",
@@ -62,6 +89,75 @@ const HERO_SLIDES = [
   "https://upload.wikimedia.org/wikipedia/commons/f/f8/The_City_and_the_Prokletije_from_the_castle.jpg",
 ];
 
+type DestinationItem = {
+  title: string;
+  image: string;
+};
+
+function DestinationCard({
+  item,
+  index,
+  total,
+  scrollXProgress,
+  className,
+  onRef,
+}: {
+  item: DestinationItem;
+  index: number;
+  total: number;
+  scrollXProgress: ReturnType<typeof useScroll>["scrollXProgress"];
+  className: string;
+  onRef: (node: HTMLDivElement | null) => void;
+}) {
+  const start = index / total;
+  const end = (index + 1) / total;
+  const center = (start + end) / 2;
+
+  const centerBand = 0.05;
+  const centerStart = Math.max(0, center );
+  const centerEnd = Math.min(1, center );
+
+  const scale = useTransform(scrollXProgress, [start, centerStart, centerEnd, end], [0.8, 1, 1, 0.8]);
+  const opacity = useTransform(scrollXProgress, [start, centerStart, centerEnd, end], [0.8, 1, 1, 0.8]);
+  const filter = useTransform(
+    scrollXProgress,
+    [start, centerStart, centerEnd, end],
+    [
+      "blur(5px) brightness(0.7)",
+      "blur(0px) brightness(1)",
+      "blur(0px) brightness(1)",
+      "blur(5px) brightness(0.7)",
+    ],
+  );
+
+  return (
+    <motion.div
+      className={className}
+      style={{ scale, opacity, filter, willChange: "transform, opacity, filter" }}
+      ref={onRef}
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={IN_VIEW}
+      transition={{ delay: index * 0.08 }}
+    >
+      <Card className="overflow-hidden h-full shadow-2xl border-white/10 bg-black/10">
+        <div className="relative">
+          <img
+            src={item.image}
+            alt={item.title}
+            className="h-[420px] sm:h-[480px] md:h-[600px] lg:h-[640px] w-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-4 pb-4 pt-10">
+            <h3 className="text-base sm:text-lg font-semibold text-white">{item.title}</h3>
+          </div>
+        </div>
+      </Card>
+    </motion.div>
+  );
+}
+
 export default function Home() {
   const [selectedCity, setSelectedCity] = useState(CITIES[1]);
   const [weather, setWeather] = useState<{ temp: number; symbol: string } | null>(null);
@@ -73,6 +169,17 @@ export default function Home() {
   const [newsletterHoneypot, setNewsletterHoneypot] = useState("");
   const [newsletterFormStartedAt] = useState(() => Date.now());
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const destinationsRef = useRef<HTMLDivElement | null>(null);
+  const destinationCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [destinationContainerWidth, setDestinationContainerWidth] = useState(0);
+  const loopBoundsRef = useRef<{
+    minEdge: number;
+    maxEdge: number;
+    jumpToStart: number;
+    jumpToEnd: number;
+  } | null>(null);
+  const isJumpingRef = useRef(false);
+  const { scrollX, scrollXProgress } = useScroll({ container: destinationsRef });
   const [, navigate] = useLocation();
 
   // Weather Fetch Logic
@@ -126,6 +233,82 @@ export default function Home() {
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  const loopedDestinations =
+    DESTINATION_GALLERY.length > 1
+      ? [
+          DESTINATION_GALLERY[DESTINATION_GALLERY.length - 1],
+          ...DESTINATION_GALLERY,
+          DESTINATION_GALLERY[0],
+        ]
+      : DESTINATION_GALLERY;
+
+  useLayoutEffect(() => {
+    const container = destinationsRef.current;
+    if (!container) return;
+
+    const measure = () => {
+      const items = destinationCardRefs.current.filter(Boolean) as HTMLDivElement[];
+      if (!items.length) return;
+      setDestinationContainerWidth(container.clientWidth);
+
+      if (DESTINATION_GALLERY.length > 1 && items.length > 2) {
+        const firstClone = items[0];
+        const lastClone = items[items.length - 1];
+        const firstReal = items[1];
+        const lastReal = items[items.length - 2];
+        loopBoundsRef.current = {
+          minEdge: firstClone.offsetLeft,
+          maxEdge: lastClone.offsetLeft + lastClone.offsetWidth,
+          jumpToStart: firstReal.offsetLeft - 20,
+          jumpToEnd: lastReal.offsetLeft - 20,
+        };
+        container.scrollTo({ left: firstReal.offsetLeft - 20, behavior: "instant" as ScrollBehavior });
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      measure();
+    });
+    resizeObserver.observe(container);
+    const readyTimer = window.setTimeout(measure, 200);
+
+    return () => {
+      window.clearTimeout(readyTimer);
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  useMotionValueEvent(scrollX, "change", (latest) => {
+    const bounds = loopBoundsRef.current;
+    if (!bounds || isJumpingRef.current || DESTINATION_GALLERY.length <= 1) return;
+    if (!destinationContainerWidth) return;
+    const buffer = 80;
+
+    if (latest + destinationContainerWidth >= bounds.maxEdge - buffer) {
+      const container = destinationsRef.current;
+      if (!container) return;
+      isJumpingRef.current = true;
+      const previousSnap = container.style.scrollSnapType;
+      container.style.scrollSnapType = "none";
+      container.scrollTo({ left: bounds.jumpToStart, behavior: "instant" as ScrollBehavior });
+      window.requestAnimationFrame(() => {
+        container.style.scrollSnapType = previousSnap || "x mandatory";
+        isJumpingRef.current = false;
+      });
+    } else if (latest <= bounds.minEdge + buffer) {
+      const container = destinationsRef.current;
+      if (!container) return;
+      isJumpingRef.current = true;
+      const previousSnap = container.style.scrollSnapType;
+      container.style.scrollSnapType = "none";
+      container.scrollTo({ left: bounds.jumpToEnd, behavior: "instant" as ScrollBehavior });
+      window.requestAnimationFrame(() => {
+        container.style.scrollSnapType = previousSnap || "x mandatory";
+        isJumpingRef.current = false;
+      });
+    }
+  });
 
   const cycleHeroBackground = () => {
     setHeroSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
@@ -305,7 +488,7 @@ export default function Home() {
           
           {/* Left: City Info Card */}
           <div className="w-full lg:w-[42%]">
-            <h2 className="text-4xl font-serif font-bold mb-7 text-foreground">Destinations</h2>
+            <h2 className="text-4xl font-serif font-bold mb-7 text-foreground">Cities</h2>
             <AnimatePresence mode="wait">
               <motion.div
                 key={selectedCity.id}
@@ -467,6 +650,50 @@ export default function Home() {
                 </CardContent>
               </Card>
               </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-24 px-4 md:px-8 lg:px-16 bg-secondary/10">
+        <div className="max-w-7xl mx-auto">
+          <motion.h2
+            className="text-3xl md:text-4xl font-serif font-bold mb-3"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={IN_VIEW}
+          >
+            Destinations
+          </motion.h2>
+          <motion.p
+            className="text-muted-foreground mb-8 max-w-3xl"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={IN_VIEW}
+            transition={{ delay: 0.08 }}
+          >
+            Explore main destinations and see what people said about them.
+          </motion.p>
+          <div
+            ref={destinationsRef}
+            className="flex overflow-x-auto pb-12 pt-6 snap-x snap-mandatory scroll-smooth overflow-y-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {loopedDestinations.map((item, index) => (
+              <DestinationCard
+                key={`${item.title}-${index}`}
+                item={item}
+                index={index}
+                total={loopedDestinations.length}
+                scrollXProgress={scrollXProgress}
+                className={`snap-center min-w-[300px] md:min-w-[420px] -ml-12 md:-ml-20 first:ml-0 transition-none ${
+                  index === 0 ? "ml-4 md:ml-8" : ""
+                }`}
+                onRef={(node) => {
+                  if (node) {
+                    destinationCardRefs.current[index] = node;
+                  }
+                }}
+              />
             ))}
           </div>
         </div>
