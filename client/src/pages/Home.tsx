@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useLayoutEffect, type FormEvent } from "react";
-import { motion, AnimatePresence, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
-import { ArrowDown, Sun, Compass, Camera, Landmark } from "lucide-react";
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
+import { ArrowDown, Sun, Compass, Camera, Landmark, Mountain } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,14 +11,13 @@ import { supabase } from "@/lib/supabase";
 const GUIDES = [
   { title: "Albanian Riviera", icon: Sun, description: "Crystal clear waters from Vlorë to Ksamil." },
   { title: "Ancient History", icon: Landmark, description: "Explore Illyrian ruins and Ottoman castles." },
-  { title: "Accursed Mountains", icon: Compass, description: "Breathtaking alpine landscapes in Theth and Valbonë." },
-  { title: "Cultural Heritage", icon: Camera, description: "Experience the unique 'Besa' hospitality." }
+  { title: "Accursed Mountains", icon: Mountain, description: "Breathtaking alpine landscapes in Theth and Valbonë." },
+  { title: "Beautiful Destinations", icon: Camera, description: "Experience the unique 'Besa' hospitality." }
 ];
 
 const NAV_ITEMS = [
   { label: "For Albanians", href: "/thashetheme-square" },
   { label: "For Visitors", href: "/visitors-guide" },
-  { label: "What's New", href: "/whats-new" },
   { label: "Plan Your Trip", href: "/plan-your-trip" },
 ];
 
@@ -26,19 +25,19 @@ const GASTRONOMY = [
   {
     title: "Tavë Kosi",
     description: "Baked lamb and yogurt dish from Elbasan, one of Albania's signature foods.",
-    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Tav%C3%AB_kosi.jpg",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Tav%C3%AB_kosi.jpg?width=900",
     source: "https://commons.wikimedia.org/wiki/File:Tav%C3%AB_kosi.jpg",
   },
   {
     title: "Fërgesë",
     description: "Traditional mix of peppers, tomatoes, onions, and cheese, often served warm with bread.",
-    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Fergese-albanian-dish.jpg",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Fergese-albanian-dish.jpg?width=900",
     source: "https://commons.wikimedia.org/wiki/File:Fergese-albanian-dish.jpg",
   },
   {
     title: "Byrek",
     description: "Flaky layered pastry with savory fillings, a staple in Albanian homes and bakeries.",
-    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Albanian_triangle_byrek.jpg",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Albanian_triangle_byrek.jpg?width=900",
     source: "https://commons.wikimedia.org/wiki/File:Albanian_triangle_byrek.jpg",
   },
 ];
@@ -51,29 +50,33 @@ const PLAN_VISIT_STEPS = [
 
 const DESTINATION_GALLERY = [
   {
-    title: "Blue Eye",
-    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Blue%20eye%20Albania%202018%205.jpg",
+    title: "Durres",
+    image: "https://i.pinimg.com/736x/2a/7c/1c/2a7c1c78be29ffb82a9d58d8ab34e79c.jpg",
   },
   {
-    title: "Valbona River",
-    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Valbona%20river.jpg",
+    title: "Theth",
+    image: "https://i.pinimg.com/1200x/e7/df/0c/e7df0c578ba270ed52978dd17c04bc93.jpg",
   },
   {
-    title: "Ksamil Beach",
-    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Ksamil%20beach.jpg",
+    title: "Tropoje",
+    image: "https://i.pinimg.com/736x/6f/40/e4/6f40e4fde39456c303759e6aa649c789.jpg",
   },
   {
-    title: "Rozafa Castle",
-    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Wanderful%20Rozafa%20Castle%20in%20Shkod%C3%ABr%20Albania.jpg",
+    title: "Berat",
+    image: "https://i.pinimg.com/736x/b4/ba/c0/b4bac0e46339a017dd9a49aabc5d533d.jpg",
   },
   {
-    title: "Skanderbeg Monument",
-    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Skanderbeg%20Monument%20in%20Tirana%2C%20Albania.jpg",
+    title: "Vlore",
+    image: "https://i.pinimg.com/736x/77/b1/57/77b157d3fd5a20bbd3ccc9dddc15cb40.jpg",
   },
-  {
-    title: "Albanian Alps",
-    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Albanian%20Alps%20from%20the%20sky.jpg",
-  },
+];
+
+const DESTINATION_GRADIENTS = [
+  "linear-gradient(120deg, rgba(16,30,45,0.92), rgba(72,42,36,0.85))",
+  "linear-gradient(120deg, rgba(18,32,40,0.92), rgba(64,72,90,0.85))",
+  "linear-gradient(120deg, rgba(20,28,24,0.92), rgba(54,78,58,0.85))",
+  "linear-gradient(120deg, rgba(28,24,36,0.92), rgba(84,64,72,0.85))",
+  "linear-gradient(120deg, rgba(12,26,34,0.92), rgba(42,82,72,0.85))",
 ];
 
 const VINTAGE_GALLERY = [
@@ -96,65 +99,28 @@ type DestinationItem = {
 
 function DestinationCard({
   item,
-  index,
-  total,
-  scrollXProgress,
-  className,
   onRef,
 }: {
   item: DestinationItem;
-  index: number;
-  total: number;
-  scrollXProgress: ReturnType<typeof useScroll>["scrollXProgress"];
-  className: string;
   onRef: (node: HTMLDivElement | null) => void;
 }) {
-  const start = index / total;
-  const end = (index + 1) / total;
-  const center = (start + end) / 2;
-
-  const centerBand = 0.05;
-  const centerStart = Math.max(0, center );
-  const centerEnd = Math.min(1, center );
-
-  const scale = useTransform(scrollXProgress, [start, centerStart, centerEnd, end], [0.8, 1, 1, 0.8]);
-  const opacity = useTransform(scrollXProgress, [start, centerStart, centerEnd, end], [0.8, 1, 1, 0.8]);
-  const filter = useTransform(
-    scrollXProgress,
-    [start, centerStart, centerEnd, end],
-    [
-      "blur(5px) brightness(0.7)",
-      "blur(0px) brightness(1)",
-      "blur(0px) brightness(1)",
-      "blur(5px) brightness(0.7)",
-    ],
-  );
-
   return (
-    <motion.div
-      className={className}
-      style={{ scale, opacity, filter, willChange: "transform, opacity, filter" }}
-      ref={onRef}
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={IN_VIEW}
-      transition={{ delay: index * 0.08 }}
-    >
+    <div ref={onRef} className="snap-center shrink-0 w-[300px] md:w-[450px] h-[500px] md:h-[600px]">
       <Card className="overflow-hidden h-full shadow-2xl border-white/10 bg-black/10">
-        <div className="relative">
+        <div className="relative h-full">
           <img
             src={item.image}
             alt={item.title}
-            className="h-[420px] sm:h-[480px] md:h-[600px] lg:h-[640px] w-full object-cover"
+            className="h-full w-full object-cover"
             loading="lazy"
             decoding="async"
           />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-4 pb-4 pt-10">
-            <h3 className="text-base sm:text-lg font-semibold text-white">{item.title}</h3>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent p-8 flex flex-col justify-end">
+            <h3 className="text-2xl font-bold text-white">{item.title}</h3>
           </div>
         </div>
       </Card>
-    </motion.div>
+    </div>
   );
 }
 
@@ -172,6 +138,11 @@ export default function Home() {
   const destinationsRef = useRef<HTMLDivElement | null>(null);
   const destinationCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [destinationContainerWidth, setDestinationContainerWidth] = useState(0);
+  const [carouselSidePadding, setCarouselSidePadding] = useState(210);
+  const [activeDestinationIndex, setActiveDestinationIndex] = useState(0);
+  const [carouselReady, setCarouselReady] = useState(false);
+  const swipeStartXRef = useRef(0);
+  const swipeStartScrollRef = useRef(0);
   const loopBoundsRef = useRef<{
     minEdge: number;
     maxEdge: number;
@@ -179,7 +150,9 @@ export default function Home() {
     jumpToEnd: number;
   } | null>(null);
   const isJumpingRef = useRef(false);
-  const { scrollX, scrollXProgress } = useScroll({ container: destinationsRef });
+  const isDraggingRef = useRef(false);
+  const lastJumpAtRef = useRef(0);
+  const { scrollX } = useScroll({ container: destinationsRef });
   const [, navigate] = useLocation();
 
   // Weather Fetch Logic
@@ -210,6 +183,28 @@ export default function Home() {
 
     fetchWeather();
   }, [selectedCity]);
+
+  useEffect(() => {
+    const prefetchSources = [
+      ...HERO_SLIDES,
+      ...DESTINATION_GALLERY.map((item) => item.image),
+      ...GASTRONOMY.map((item) => item.image),
+      ...VINTAGE_GALLERY,
+    ];
+
+    const prefetch = () => {
+      prefetchSources.forEach((src) => {
+        const image = new Image();
+        image.src = src;
+      });
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(prefetch);
+    } else {
+      window.setTimeout(prefetch, 200);
+    }
+  }, []);
 
   useEffect(() => {
     const onScroll = () => {
@@ -251,6 +246,11 @@ export default function Home() {
       const items = destinationCardRefs.current.filter(Boolean) as HTMLDivElement[];
       if (!items.length) return;
       setDestinationContainerWidth(container.clientWidth);
+      const firstCard = items[0];
+      if (firstCard) {
+        setCarouselSidePadding(Math.round(firstCard.clientWidth / 2));
+      }
+      setCarouselReady(true);
 
       if (DESTINATION_GALLERY.length > 1 && items.length > 2) {
         const firstClone = items[0];
@@ -273,22 +273,98 @@ export default function Home() {
     resizeObserver.observe(container);
     const readyTimer = window.setTimeout(measure, 200);
 
+    const handlePointerDown = () => {
+      isDraggingRef.current = true;
+    };
+    const handlePointerUp = () => {
+      isDraggingRef.current = false;
+    };
+
+    container.addEventListener("pointerdown", handlePointerDown, { passive: true });
+    container.addEventListener("pointerup", handlePointerUp, { passive: true });
+    container.addEventListener("pointercancel", handlePointerUp, { passive: true });
+    container.addEventListener("touchstart", handlePointerDown, { passive: true });
+    container.addEventListener("touchend", handlePointerUp, { passive: true });
+    container.addEventListener("touchcancel", handlePointerUp, { passive: true });
+
+    const handleSwipeStart = (event: PointerEvent | TouchEvent) => {
+      const touch = "touches" in event ? event.touches[0] : (event as PointerEvent);
+      swipeStartXRef.current = touch.clientX;
+      swipeStartScrollRef.current = container.scrollLeft;
+    };
+
+    const handleSwipeEnd = (event: PointerEvent | TouchEvent) => {
+      const touch = "changedTouches" in event ? event.changedTouches[0] : (event as PointerEvent);
+      const deltaX = touch.clientX - swipeStartXRef.current;
+      const scrollDelta = Math.abs(container.scrollLeft - swipeStartScrollRef.current);
+      if (scrollDelta < 40) return;
+      if (deltaX < -60) {
+        scrollCarouselBy("next");
+      } else if (deltaX > 60) {
+        scrollCarouselBy("prev");
+      }
+    };
+
+    container.addEventListener("touchstart", handleSwipeStart, { passive: true });
+    container.addEventListener("touchend", handleSwipeEnd, { passive: true });
+    container.addEventListener("pointerdown", handleSwipeStart, { passive: true });
+    container.addEventListener("pointerup", handleSwipeEnd, { passive: true });
+
     return () => {
       window.clearTimeout(readyTimer);
+      container.removeEventListener("pointerdown", handlePointerDown);
+      container.removeEventListener("pointerup", handlePointerUp);
+      container.removeEventListener("pointercancel", handlePointerUp);
+      container.removeEventListener("touchstart", handlePointerDown);
+      container.removeEventListener("touchend", handlePointerUp);
+      container.removeEventListener("touchcancel", handlePointerUp);
+      container.removeEventListener("touchstart", handleSwipeStart);
+      container.removeEventListener("touchend", handleSwipeEnd);
+      container.removeEventListener("pointerdown", handleSwipeStart);
+      container.removeEventListener("pointerup", handleSwipeEnd);
       resizeObserver.disconnect();
     };
   }, []);
 
+  const scrollCarouselBy = (direction: "prev" | "next") => {
+    const container = destinationsRef.current;
+    const items = destinationCardRefs.current.filter(Boolean) as HTMLDivElement[];
+    if (!container || !items.length) return;
+
+    const containerCenter = container.scrollLeft + container.clientWidth / 2;
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+    items.forEach((card, index) => {
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+      const distance = Math.abs(containerCenter - cardCenter);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    const targetIndex =
+      direction === "next"
+        ? Math.min(closestIndex + 1, items.length - 1)
+        : Math.max(closestIndex - 1, 0);
+    const target = items[targetIndex];
+    const targetLeft = target.offsetLeft - (container.clientWidth - target.clientWidth) / 2;
+    container.scrollTo({ left: targetLeft, behavior: "smooth" });
+  };
+
   useMotionValueEvent(scrollX, "change", (latest) => {
     const bounds = loopBoundsRef.current;
-    if (!bounds || isJumpingRef.current || DESTINATION_GALLERY.length <= 1) return;
+    if (!bounds || isJumpingRef.current || isDraggingRef.current || DESTINATION_GALLERY.length <= 1) return;
     if (!destinationContainerWidth) return;
     const buffer = 80;
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    if (now - lastJumpAtRef.current < 250) return;
 
     if (latest + destinationContainerWidth >= bounds.maxEdge - buffer) {
       const container = destinationsRef.current;
       if (!container) return;
       isJumpingRef.current = true;
+      lastJumpAtRef.current = now;
       const previousSnap = container.style.scrollSnapType;
       container.style.scrollSnapType = "none";
       container.scrollTo({ left: bounds.jumpToStart, behavior: "instant" as ScrollBehavior });
@@ -300,6 +376,7 @@ export default function Home() {
       const container = destinationsRef.current;
       if (!container) return;
       isJumpingRef.current = true;
+      lastJumpAtRef.current = now;
       const previousSnap = container.style.scrollSnapType;
       container.style.scrollSnapType = "none";
       container.scrollTo({ left: bounds.jumpToEnd, behavior: "instant" as ScrollBehavior });
@@ -309,6 +386,38 @@ export default function Home() {
       });
     }
   });
+
+  useEffect(() => {
+    const container = destinationsRef.current;
+    if (!container) return;
+    const total = loopedDestinations.length;
+    const baseCount = DESTINATION_GALLERY.length;
+    const toOriginalIndex = (idx: number) => {
+      if (baseCount <= 1) return idx;
+      if (idx === 0) return baseCount - 1;
+      if (idx === total - 1) return 0;
+      return idx - 1;
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const index = Number((entry.target as HTMLElement).dataset.index ?? 0);
+          setActiveDestinationIndex(toOriginalIndex(index));
+        });
+      },
+      { root: container, threshold: 0.6 },
+    );
+
+    destinationCardRefs.current.forEach((node, idx) => {
+      if (!node) return;
+      node.dataset.index = String(idx);
+      observer.observe(node);
+    });
+
+    return () => observer.disconnect();
+  }, [loopedDestinations.length]);
 
   const cycleHeroBackground = () => {
     setHeroSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
@@ -598,7 +707,7 @@ export default function Home() {
       </section>
 
       <section className="py-24 px-4 md:px-8 lg:px-16 bg-background">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto relative z-10">
           <motion.h2
             className="text-3xl md:text-4xl font-serif font-bold mb-3"
             initial={{ opacity: 0, y: 24 }}
@@ -655,8 +764,27 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-24 px-4 md:px-8 lg:px-16 bg-secondary/10">
-        <div className="max-w-7xl mx-auto">
+      <section className="relative overflow-hidden py-24 px-4 md:px-8 lg:px-16 bg-secondary/10">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeDestinationIndex}
+            className="absolute inset-0"
+            style={{ background: DESTINATION_GRADIENTS[activeDestinationIndex % DESTINATION_GRADIENTS.length] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
+          />
+        </AnimatePresence>
+        <div className="absolute inset-0 bg-black/15" />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 45%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.18) 45%, rgba(0,0,0,0.42) 75%, rgba(0,0,0,0.7) 100%)",
+          }}
+        />
+        <div className="max-w-7xl mx-auto relative z-10">
           <motion.h2
             className="text-3xl md:text-4xl font-serif font-bold mb-3"
             initial={{ opacity: 0, y: 24 }}
@@ -676,18 +804,21 @@ export default function Home() {
           </motion.p>
           <div
             ref={destinationsRef}
-            className="flex overflow-x-auto pb-12 pt-6 snap-x snap-mandatory scroll-smooth overflow-y-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            className="flex gap-6 overflow-x-auto pb-12 pt-6 snap-x snap-mandatory overflow-y-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            style={{
+              scrollSnapType: "x mandatory",
+              scrollPaddingInline: "0px",
+              paddingLeft: `calc(50% - ${carouselSidePadding}px)`,
+              paddingRight: `calc(50% - ${carouselSidePadding}px)`,
+              scrollSnapStop: "always",
+              WebkitOverflowScrolling: "auto",
+              overscrollBehaviorX: "contain",
+            }}
           >
             {loopedDestinations.map((item, index) => (
               <DestinationCard
                 key={`${item.title}-${index}`}
                 item={item}
-                index={index}
-                total={loopedDestinations.length}
-                scrollXProgress={scrollXProgress}
-                className={`snap-center min-w-[300px] md:min-w-[420px] -ml-12 md:-ml-20 first:ml-0 transition-none ${
-                  index === 0 ? "ml-4 md:ml-8" : ""
-                }`}
                 onRef={(node) => {
                   if (node) {
                     destinationCardRefs.current[index] = node;
@@ -788,56 +919,6 @@ export default function Home() {
                 />
               ))}
             </div>
-          </div>
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardContent className="p-6 space-y-3">
-                <h3 className="text-xl font-semibold">Hotels</h3>
-                <p className="text-sm text-muted-foreground">
-                  Book boutique stays or larger resorts based on your route.
-                </p>
-                <a
-                  href="https://www.booking.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm underline underline-offset-2"
-                >
-                  Browse hotels
-                </a>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6 space-y-3">
-                <h3 className="text-xl font-semibold">Airbnb</h3>
-                <p className="text-sm text-muted-foreground">
-                  Find local apartments and seaside rentals.
-                </p>
-                <a
-                  href="https://www.airbnb.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm underline underline-offset-2"
-                >
-                  Rent an Airbnb
-                </a>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6 space-y-3">
-                <h3 className="text-xl font-semibold">Car Rental</h3>
-                <p className="text-sm text-muted-foreground">
-                  Best for coast-to-mountain routes and flexible day trips.
-                </p>
-                <a
-                  href="https://www.rentalcars.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm underline underline-offset-2"
-                >
-                  Compare rentals
-                </a>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </section>

@@ -28,5 +28,11 @@
     "emailHash": "5fe86c4bf33101700ef6a42b8bc6415b30a28bb5115cdbbd95eedbd5be03424c",
     "emailEncrypted": "fdb078b121a51f79daee36d2:8fde8d6f0b72eaca07567d6b39e0eb31:b2f12bcbd588e5493d9d674e5115867a4272",
     "createdAt": "2026-02-27T14:58:08.418Z"
+  },
+  {
+    "id": "908e055b-5717-45f7-a451-da1f8bbd7750",
+    "emailHash": "d6e5775b2f38d5c32a4bb2cb18e54fb7c139599d8d0fd68c32d5287f10ba0259",
+    "emailEncrypted": "daad1e8b0abe580bc7fa6c1a:89d82f7a2d2ae8fa33c83a5595278446:96fb88e8751acfeb3120fe696f56f38c26e8bc24358f",
+    "createdAt": "2026-03-26T16:00:46.461Z"
   }
 ]

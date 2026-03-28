@@ -261,5 +261,61 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/ors/directions", async (req, res, next) => {
+    try {
+      const apiKey = process.env.ORS_API_KEY;
+      if (!apiKey) {
+        return res.status(503).json({
+          message: "Routing service is not configured yet.",
+        });
+      }
+
+      const coordinates = req.body?.coordinates as unknown;
+      if (
+        !Array.isArray(coordinates) ||
+        coordinates.length < 2 ||
+        !coordinates.every(
+          (pair) =>
+            Array.isArray(pair) &&
+            pair.length === 2 &&
+            typeof pair[0] === "number" &&
+            typeof pair[1] === "number",
+        )
+      ) {
+        return res.status(400).json({
+          message: "Please select at least two cities to build a route.",
+        });
+      }
+
+      const response = await fetch(
+        "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
+        {
+          method: "POST",
+          headers: {
+            Authorization: apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ coordinates }),
+        },
+      );
+
+      const data = await response.json();
+      if (response.ok && data?.error?.message) {
+        return res.status(502).json({
+          message: data.error.message,
+        });
+      }
+      if (!response.ok) {
+        return res.status(response.status).json({
+          message: data?.error?.message ?? "Could not build a route.",
+        });
+      }
+
+      return res.status(200).json(data);
+    } catch (error) {
+      return next(error);
+    }
+  });
+
   return httpServer;
 }

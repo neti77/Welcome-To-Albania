@@ -28,7 +28,6 @@ function Router() {
       <Route path="/visitors-guide" component={VisitorsGuidePage} />
       <Route path="/for-albanians" component={ThashethemeSquarePage} />
       <Route path="/for-visitors" component={VisitorsGuidePage} />
-      <Route path="/whats-new" component={HubPage} />
       <Route path="/plan-your-trip" component={HubPage} />
       <Route path="/auth" component={AuthRoute} />
       <Route path="/sign-in" component={SignInPage} />

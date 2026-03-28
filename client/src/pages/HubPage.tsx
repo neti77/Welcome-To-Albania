@@ -1,6 +1,9 @@
+import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { CITIES } from "@/data/cities";
+import { ALBANIA_MAP_PATH, projectAlbaniaPoint } from "@/data/albaniaMap";
 
 type Article = {
   title: string;
@@ -16,6 +19,27 @@ type PageContent = {
   quickGuide: string[];
   articles: Article[];
 };
+
+const TRIP_SERVICES = [
+  {
+    title: "Hotels",
+    description: "Book boutique stays or larger resorts based on your route.",
+    url: "https://www.booking.com/",
+    label: "Browse hotels",
+  },
+  {
+    title: "Airbnb",
+    description: "Find local apartments and seaside rentals.",
+    url: "https://www.airbnb.com/",
+    label: "Rent an Airbnb",
+  },
+  {
+    title: "Car Rental",
+    description: "Best for coast-to-mountain routes and flexible day trips.",
+    url: "https://www.rentalcars.com/",
+    label: "Compare rentals",
+  },
+];
 
 const PAGE_CONTENT: Record<string, PageContent> = {
   "/for-albanians": {
@@ -90,42 +114,6 @@ const PAGE_CONTENT: Record<string, PageContent> = {
       },
     ],
   },
-  "/whats-new": {
-    title: "What's New",
-    subtitle:
-      "Fresh platform updates and timely travel context so returning visitors always find something new.",
-    quickGuide: [
-      "Recently added city pages and map refinements",
-      "Upcoming content: blog stories + curated route drops",
-      "Roadmap focus: practical travel tools over filler content",
-    ],
-    articles: [
-      {
-        title: "Open-Meteo Docs",
-        excerpt:
-          "The weather source behind destination cards, useful if you want to understand forecast data quality.",
-        url: "https://open-meteo.com/en/docs",
-        source: "Open-Meteo",
-        image: "/src/assets/images/city-tirana.jpg",
-      },
-      {
-        title: "geoBoundaries Project",
-        excerpt:
-          "Boundary-data reference used for accurate country geometry and mapping quality.",
-        url: "https://www.geoboundaries.org/",
-        source: "geoBoundaries",
-        image: "/src/assets/images/city-shkoder.jpg",
-      },
-      {
-        title: "Wikimedia Commons Albania",
-        excerpt:
-          "A broad media source for historical imagery and destination references.",
-        url: "https://commons.wikimedia.org/wiki/Category:Albania",
-        source: "Wikimedia Commons",
-        image: "/src/assets/images/city-berat.jpg",
-      },
-    ],
-  },
   "/plan-your-trip": {
     title: "Plan Your Trip",
     subtitle:
@@ -167,6 +155,124 @@ const PAGE_CONTENT: Record<string, PageContent> = {
 export default function HubPage() {
   const [location] = useLocation();
   const content = PAGE_CONTENT[location] ?? PAGE_CONTENT["/for-visitors"];
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [routeStatus, setRouteStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [routeError, setRouteError] = useState<string>("");
+  const [routeSummary, setRouteSummary] = useState<{
+    distance: number;
+    duration: number;
+    legs: Array<{ from: string; to: string; distance: number; duration: number }>;
+    steps: Array<{ instruction: string; distance: number; duration: number }>;
+  } | null>(null);
+  const [routeLine, setRouteLine] = useState<Array<{ x: number; y: number }>>([]);
+
+  const selectedCityObjects = useMemo(
+    () => CITIES.filter((city) => selectedCities.includes(city.id)),
+    [selectedCities],
+  );
+
+  const toggleCity = (cityId: string) => {
+    setSelectedCities((current) => {
+      if (current.includes(cityId)) {
+        return current.filter((id) => id !== cityId);
+      }
+      return [...current, cityId];
+    });
+  };
+
+  const formatDistance = (meters: number) => {
+    if (!Number.isFinite(meters)) return "--";
+    if (meters < 1000) return `${Math.round(meters)} m`;
+    return `${(meters / 1000).toFixed(1)} km`;
+  };
+
+  const formatDuration = (seconds: number) => {
+    if (!Number.isFinite(seconds)) return "--";
+    const totalMinutes = Math.round(seconds / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (!hours) return `${minutes} min`;
+    return `${hours}h ${minutes}m`;
+  };
+
+  const buildRoute = async () => {
+    setRouteError("");
+    setRouteSummary(null);
+    setRouteLine([]);
+    if (selectedCityObjects.length < 2) {
+      setRouteError("Pick at least two cities to build a route.");
+      setRouteStatus("error");
+      return;
+    }
+
+    setRouteStatus("loading");
+    try {
+      const coordinates = selectedCityObjects.map((city) => [city.lon, city.lat]);
+      const response = await fetch("/api/ors/directions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coordinates }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setRouteError(data?.message ?? "Could not build a route.");
+        setRouteStatus("error");
+        return;
+      }
+
+      const routeFeature = data?.features?.[0];
+      const route = routeFeature?.properties;
+      if (!route) {
+        setRouteError(data?.message ?? "Route data is unavailable.");
+        setRouteStatus("error");
+        return;
+      }
+
+      const legs = Array.isArray(route.segments)
+        ? route.segments.map((segment: { distance: number; duration: number }, index: number) => ({
+            from: selectedCityObjects[index]?.name ?? "Stop",
+            to: selectedCityObjects[index + 1]?.name ?? "Next stop",
+            distance: segment.distance,
+            duration: segment.duration,
+          }))
+        : [];
+
+      const steps = Array.isArray(route.segments)
+        ? route.segments.flatMap(
+            (segment: { steps?: Array<{ instruction: string; distance: number; duration: number }> }) =>
+              Array.isArray(segment.steps)
+                ? segment.steps.map((step) => ({
+                    instruction: step.instruction,
+                    distance: step.distance,
+                    duration: step.duration,
+                  }))
+                : [],
+          )
+        : [];
+
+      const geometry = routeFeature?.geometry?.coordinates;
+      if (Array.isArray(geometry)) {
+        const projected = geometry.map((pair: [number, number]) => {
+          const point = projectAlbaniaPoint(pair[1], pair[0]);
+          return { x: point.x, y: point.y };
+        });
+        setRouteLine(projected);
+      } else {
+        setRouteLine([]);
+      }
+
+      setRouteSummary({
+        distance: route.summary?.distance ?? 0,
+        duration: route.summary?.duration ?? 0,
+        legs,
+        steps,
+      });
+      setRouteStatus("ready");
+    } catch {
+      setRouteError("Could not build a route.");
+      setRouteStatus("error");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -189,51 +295,162 @@ export default function HubPage() {
           <p className="text-lg text-muted-foreground max-w-3xl">{content.subtitle}</p>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-semibold mb-4">Quick Guide</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {content.quickGuide.map((point) => (
-              <Card key={point}>
-                <CardContent className="p-6">
-                  <p className="text-sm leading-relaxed">{point}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
+        
 
-        <section>
-          <h2 className="text-2xl font-semibold mb-4">Short Reads</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {content.articles.map((article) => (
-              <Card
-                key={article.title}
-                className="border-primary/20 overflow-hidden transition-transform duration-300 hover:-translate-y-1"
-              >
-                <img
-                  src={article.image}
-                  alt={article.title}
-                  className="h-40 w-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
-                <CardContent className="p-5 space-y-3">
-                  <h3 className="text-lg font-semibold leading-snug">{article.title}</h3>
-                  <p className="text-sm text-muted-foreground">{article.excerpt}</p>
-                  <p className="text-xs uppercase tracking-wider text-primary">{article.source}</p>
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm underline underline-offset-2"
-                  >
-                    Read source
-                  </a>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
+        {location === "/plan-your-trip" && (
+          <section className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-semibold mb-2">Build Your Route</h2>
+              <p className="text-sm text-muted-foreground max-w-3xl">
+                Tap cities on the map to create a custom route. We’ll estimate travel time and distance between each stop.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-8">
+              <div className="relative rounded-2xl border border-border/60 bg-secondary/10 p-8 overflow-hidden h-[520px] md:h-[620px]">
+                <svg viewBox="0 0 100 200" className="absolute inset-8 h-[calc(100%-4rem)] w-[calc(100%-4rem)]">
+                  <path
+                    d={ALBANIA_MAP_PATH}
+                    fill="rgba(255,255,255,0.08)"
+                    stroke="rgba(255,255,255,0.35)"
+                    strokeWidth="0.4"
+                  />
+                  {routeLine.length > 1 && (
+                    <polyline
+                      points={routeLine.map((point) => `${point.x},${point.y}`).join(" ")}
+                      fill="none"
+                      stroke="rgba(244,63,94,0.85)"
+                      strokeWidth="0.6"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                    />
+                  )}
+                  {CITIES.map((city) => {
+                    const point = projectAlbaniaPoint(city.lat, city.lon);
+                    const selected = selectedCities.includes(city.id);
+                    return (
+                      <circle
+                        key={city.id}
+                        cx={point.x}
+                        cy={point.y}
+                        r={selected ? 1.4 : 1.2}
+                        fill={selected ? "rgb(244 63 94)" : "rgba(255,255,255,0.85)"}
+                        stroke={selected ? "rgb(244 63 94)" : "rgba(255,255,255,0.7)"}
+                        strokeWidth="0.4"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => toggleCity(city.id)}
+                      />
+                    );
+                  })}
+                </svg>
+                <div className="absolute bottom-4 left-4 right-4 text-xs text-muted-foreground">
+                  Selected: {selectedCityObjects.length} / {CITIES.length}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <Card>
+                  <CardContent className="p-5 space-y-3">
+                    <h3 className="text-lg font-semibold">Selected Stops</h3>
+                    {!selectedCityObjects.length && (
+                      <p className="text-sm text-muted-foreground">
+                        Pick at least two cities to build a route.
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCityObjects.map((city) => (
+                        <button
+                          key={city.id}
+                          type="button"
+                          onClick={() => toggleCity(city.id)}
+                          className="rounded-full border border-primary/40 px-3 py-1 text-xs"
+                        >
+                          {city.name}
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      onClick={buildRoute}
+                      disabled={routeStatus === "loading"}
+                      className="w-full"
+                    >
+                      {routeStatus === "loading" ? "Building route..." : "Generate tour"}
+                    </Button>
+                    {routeStatus === "error" && (
+                      <p className="text-xs text-rose-500">{routeError}</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {routeSummary && (
+                  <Card>
+                    <CardContent className="p-5 space-y-3">
+                      <h3 className="text-lg font-semibold">Route Summary</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Total distance {formatDistance(routeSummary.distance)} · Total time{" "}
+                        {formatDuration(routeSummary.duration)}
+                      </p>
+                      <div className="space-y-2 text-sm">
+                        {routeSummary.legs.map((leg) => (
+                          <div key={`${leg.from}-${leg.to}`} className="flex items-center justify-between">
+                            <span>{leg.from} → {leg.to}</span>
+                            <span className="text-muted-foreground">
+                              {formatDistance(leg.distance)} · {formatDuration(leg.duration)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {routeSummary?.steps?.length ? (
+                  <Card>
+                    <CardContent className="p-5 space-y-3 max-h-[320px] overflow-y-auto">
+                      <h3 className="text-lg font-semibold">Turn-by-Turn</h3>
+                      <ol className="space-y-2 text-sm">
+                        {routeSummary.steps.map((step, index) => (
+                          <li key={`${step.instruction}-${index}`} className="flex gap-3">
+                            <span className="text-xs text-muted-foreground w-8">{index + 1}.</span>
+                            <div className="flex-1">
+                              <p>{step.instruction}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatDistance(step.distance)} · {formatDuration(step.duration)}
+                              </p>
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    </CardContent>
+                  </Card>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {location === "/plan-your-trip" && (
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">Book Your Stay</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {TRIP_SERVICES.map((service) => (
+                <Card key={service.title}>
+                  <CardContent className="p-6 space-y-3">
+                    <h3 className="text-xl font-semibold">{service.title}</h3>
+                    <p className="text-sm text-muted-foreground">{service.description}</p>
+                    <a
+                      href={service.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm underline underline-offset-2"
+                    >
+                      {service.label}
+                    </a>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );
