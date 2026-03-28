@@ -56,9 +56,25 @@ const DEFAULT_NEWS_ITEMS: NewsItem[] = [
   },
 ];
 
+const NEWS_CACHE_KEY = "albania_news_cache";
+
+const getCachedNews = (): NewsItem[] => {
+  if (typeof window === "undefined") return DEFAULT_NEWS_ITEMS;
+  try {
+    const saved = window.localStorage.getItem(NEWS_CACHE_KEY);
+    if (saved === null) return DEFAULT_NEWS_ITEMS;
+    const parsed = JSON.parse(saved) as NewsItem[];
+    return Array.isArray(parsed) ? parsed : DEFAULT_NEWS_ITEMS;
+  } catch {
+    return DEFAULT_NEWS_ITEMS;
+  }
+};
+
 export default function ThashethemeSquarePage() {
-  const [newsItems, setNewsItems] = useState<NewsItem[]>(DEFAULT_NEWS_ITEMS);
-  const [selectedNews, setSelectedNews] = useState(DEFAULT_NEWS_ITEMS[0]);
+  const [newsItems, setNewsItems] = useState<NewsItem[]>(() => getCachedNews());
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(
+    () => getCachedNews()[0] ?? null,
+  );
   const [comments, setComments] = useState<NewsComment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [commentMessage, setCommentMessage] = useState("");
@@ -99,32 +115,49 @@ export default function ThashethemeSquarePage() {
     setCommentsLoading(false);
   };
 
-  useEffect(() => {
-    const loadNews = async () => {
-      try {
-        const response = await fetch("/api/news");
-        const data = await response.json();
-        const items = Array.isArray(data?.items) ? (data.items as NewsItem[]) : [];
-        if (items.length) {
-          setNewsItems(items);
-          setSelectedNews((current) => {
-            const stillExists = items.find((item) => item.id === current.id);
-            return stillExists ?? items[0];
-          });
-        }
-      } catch {
-        setNewsItems(DEFAULT_NEWS_ITEMS);
+  const loadNews = async () => {
+    try {
+      const response = await fetch("/api/news");
+      const data = await response.json();
+      const items = Array.isArray(data?.items) ? (data.items as NewsItem[]) : [];
+      setNewsItems(items);
+      if (items.length) {
+        setSelectedNews((current) => {
+          const stillExists = current ? items.find((item) => item.id === current.id) : null;
+          return stillExists ?? items[0];
+        });
+      } else {
+        setSelectedNews(null);
       }
-    };
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(items));
+      }
+    } catch {
+      setNewsItems(DEFAULT_NEWS_ITEMS);
+    }
+  };
+
+  useEffect(() => {
     void loadNews();
+    const refresh = () => {
+      if (document.hidden) return;
+      void loadNews();
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, []);
 
   useEffect(() => {
-    if (selectedNews?.id) {
+    const newsId = selectedNews?.id;
+    if (newsId) {
       setComments([]);
       setCommentsStatus("loading");
       setReplyTarget(null);
-      void loadComments(selectedNews.id);
+      void loadComments(newsId);
     }
   }, [selectedNews?.id]);
 
@@ -143,16 +176,17 @@ export default function ThashethemeSquarePage() {
 
   useEffect(() => {
     const supabaseClient = supabase;
-    if (!supabaseClient) return;
+    const newsId = selectedNews?.id;
+    if (!supabaseClient || !newsId) return;
     const channel = supabaseClient
-      .channel(`news-comments-${selectedNews.id}`)
+      .channel(`news-comments-${newsId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "news_comments",
-          filter: `news_id=eq.${selectedNews.id}`,
+          filter: `news_id=eq.${newsId}`,
         },
         (payload) => {
           const next = payload.new as NewsComment;
@@ -164,13 +198,13 @@ export default function ThashethemeSquarePage() {
     return () => {
       void supabaseClient.removeChannel(channel);
     };
-  }, [selectedNews.id]);
+  }, [selectedNews?.id]);
 
   useEffect(() => {
     if (comments.length) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, [comments, selectedNews.id]);
+  }, [comments, selectedNews?.id]);
 
   const onSubmitComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -197,6 +231,10 @@ export default function ThashethemeSquarePage() {
 
     const body = newComment.trim();
     if (!body) return;
+    if (!selectedNews?.id) {
+      setCommentMessage("No news selected yet.");
+      return;
+    }
 
     setSubmittingComment(true);
     setCommentMessage("");
@@ -262,7 +300,9 @@ export default function ThashethemeSquarePage() {
       setCommentMessage("Comment posted.");
       setLastCommentAt(Date.now());
       setReplyTarget(null);
-      await loadComments(selectedNews.id);
+      if (selectedNews?.id) {
+        await loadComments(selectedNews.id);
+      }
     } catch {
       setCommentMessage("Could not post comment.");
     } finally {
@@ -302,11 +342,16 @@ export default function ThashethemeSquarePage() {
                 Community-shared headlines and updates. Pick a thread to join the discussion.
               </p>
             </div>
+            {!newsItems.length && (
+              <p className="text-sm text-muted-foreground">
+                No published news yet. Check back soon.
+              </p>
+            )}
             {newsItems.map((news) => (
               <Card
                 key={news.id}
                 className={`overflow-hidden transition-all ${
-                  selectedNews.id === news.id ? "border-primary/40 shadow-lg" : "border-border"
+                  selectedNews?.id === news.id ? "border-primary/40 shadow-lg" : "border-border"
                 }`}
               >
                 <button
@@ -341,8 +386,16 @@ export default function ThashethemeSquarePage() {
                       Live
                     </span>
                   </div>
-                  <h2 className="text-2xl font-semibold">{selectedNews.title}</h2>
-                  <p className="text-sm text-muted-foreground">{selectedNews.description}</p>
+                  {selectedNews ? (
+                    <>
+                      <h2 className="text-2xl font-semibold">{selectedNews.title}</h2>
+                      <p className="text-sm text-muted-foreground">{selectedNews.description}</p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No news selected yet.
+                    </p>
+                  )}
                   {!hasSupabaseConfig && (
                     <p className="text-xs text-muted-foreground">Configure Supabase to enable comments.</p>
                   )}
