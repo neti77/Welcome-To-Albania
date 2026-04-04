@@ -125,7 +125,9 @@ function DestinationCard({
 }
 
 export default function Home() {
-  const [selectedCity, setSelectedCity] = useState(CITIES[1]);
+  const [selectedCity, setSelectedCity] = useState(
+    () => CITIES.find((city) => city.id === "tirana") ?? CITIES[0],
+  );
   const [weather, setWeather] = useState<{ temp: number; symbol: string } | null>(null);
   const [showNavButtons, setShowNavButtons] = useState(true);
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);

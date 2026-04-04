@@ -20,6 +20,36 @@ export const CITIES: City[] = [
     lon: 19.5141,
   },
   {
+    id: "lezhe",
+    name: "Lezhë",
+    description:
+      "A historic northern city near the coast, known for Skanderbeg's memorial and easy access to beach villages.",
+    image: "/src/assets/images/city-shkoder.jpg",
+    position: { top: "24%", left: "40%" },
+    lat: 41.78194,
+    lon: 19.64444,
+  },
+  {
+    id: "shengjin",
+    name: "Shëngjin",
+    description:
+      "A laid-back Adriatic seaside town with long beaches and quick access to Lezhë and Rana e Hedhun dunes.",
+    image: "/src/assets/images/city-vlore.jpg",
+    position: { top: "22%", left: "34%" },
+    lat: 41.81361,
+    lon: 19.59389,
+  },
+  {
+    id: "kruje",
+    name: "Krujë",
+    description:
+      "A hilltop heritage town famous for its castle, bazaar, and panoramic views above Tirana.",
+    image: "/src/assets/images/city-tirana.jpg",
+    position: { top: "32%", left: "53%" },
+    lat: 41.51083,
+    lon: 19.7925,
+  },
+  {
     id: "tirana",
     name: "Tirana",
     description:
@@ -28,6 +58,36 @@ export const CITIES: City[] = [
     position: { top: "38%", left: "52%" },
     lat: 41.3275,
     lon: 19.8187,
+  },
+  {
+    id: "elbasan",
+    name: "Elbasan",
+    description:
+      "A central crossroads city with a historic fortress core and a gateway to eastern road trips.",
+    image: "/src/assets/images/city-berat.jpg",
+    position: { top: "44%", left: "60%" },
+    lat: 41.11111,
+    lon: 20.08056,
+  },
+  {
+    id: "durres",
+    name: "Durrës",
+    description:
+      "Albania's main port and one of its oldest cities, Durrës boasts a large Roman amphitheater and popular beaches.",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Durr%C3%ABs%20seafront%20promenade%20(Albania)%2009.jpg",
+    position: { top: "40%", left: "30%" },
+    lat: 41.3236,
+    lon: 19.4544,
+  },
+  {
+    id: "fier",
+    name: "Fier",
+    description:
+      "A key hub in the southwest, known for nearby Apollonia and quick routes toward the Riviera.",
+    image: "/src/assets/images/city-berat.jpg",
+    position: { top: "56%", left: "44%" },
+    lat: 40.725,
+    lon: 19.55722,
   },
   {
     id: "berat",
@@ -40,16 +100,6 @@ export const CITIES: City[] = [
     lon: 19.952,
   },
   {
-    id: "vlore",
-    name: "Vlorë",
-    description:
-      "Where the Adriatic meets the Ionian Sea. Vlorë is famous for its beautiful riviera and stunning beaches.",
-    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Promenade_of_Vlor%C3%AB_along_the_Adriatic_Sea.jpg",
-    position: { top: "70%", left: "35%" },
-    lat: 40.4661,
-    lon: 19.4914,
-  },
-  {
     id: "gjirokaster",
     name: "Gjirokastër",
     description:
@@ -60,6 +110,56 @@ export const CITIES: City[] = [
     lon: 20.1389,
   },
   {
+    id: "pogradec",
+    name: "Pogradec",
+    description:
+      "A calm lakeside city on Lake Ohrid, ideal for slow walks and eastern road trips.",
+    image: "/src/assets/images/city-berat.jpg",
+    position: { top: "70%", left: "76%" },
+    lat: 40.9,
+    lon: 20.65,
+  },
+  {
+    id: "vlore",
+    name: "Vlorë",
+    description:
+      "Where the Adriatic meets the Ionian Sea. Vlorë is famous for its beautiful riviera and stunning beaches.",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Promenade_of_Vlor%C3%AB_along_the_Adriatic_Sea.jpg",
+    position: { top: "70%", left: "35%" },
+    lat: 40.4661,
+    lon: 19.4914,
+  },
+  {
+    id: "himare",
+    name: "Himarë",
+    description:
+      "A Riviera classic with coves, stone villages, and a calm Ionian Sea atmosphere.",
+    image: "/src/assets/images/city-vlore.jpg",
+    position: { top: "75%", left: "30%" },
+    lat: 40.11667,
+    lon: 19.73333,
+  },
+  {
+    id: "sarande",
+    name: "Sarandë",
+    description:
+      "Southern seaside base with quick access to Ksamil, Butrint, and the Blue Eye spring.",
+    image: "/src/assets/images/city-vlore.jpg",
+    position: { top: "90%", left: "32%" },
+    lat: 39.875,
+    lon: 20.01,
+  },
+  {
+    id: "ksamil",
+    name: "Ksamil",
+    description:
+      "Turquoise coves and island viewpoints just south of Sarandë.",
+    image: "/src/assets/images/city-vlore.jpg",
+    position: { top: "92%", left: "34%" },
+    lat: 39.767,
+    lon: 20,
+  },
+  {
     id: "kukes",
     name: "Kukës",
     description:
@@ -68,16 +168,6 @@ export const CITIES: City[] = [
     position: { top: "20%", left: "75%" },
     lat: 42.0769,
     lon: 20.4217,
-  },
-  {
-    id: "durres",
-    name: "Durrës",
-    description:
-      "Albania's main port and one of its oldest cities, Durrës boasts a large Roman amphitheater and popular beaches.",
-    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Durr%C3%ABs%20seafront%20promenade%20(Albania)%2009.jpg",
-    position: { top: "40%", left: "30%" },
-    lat: 41.3236,
-    lon: 19.4544,
   },
   {
     id: "korce",
@@ -98,6 +188,26 @@ export const CITIES: City[] = [
     position: { top: "9%", left: "63%" },
     lat: 42.3573,
     lon: 20.0768,
+  },
+  {
+    id: "theth",
+    name: "Theth",
+    description:
+      "A remote alpine village known for dramatic hikes, waterfalls, and stone guesthouses.",
+    image: "/src/assets/images/city-shkoder.jpg",
+    position: { top: "12%", left: "55%" },
+    lat: 42.4,
+    lon: 19.767,
+  },
+  {
+    id: "valbona",
+    name: "Valbonë",
+    description:
+      "Highland valley with iconic peaks and the Valbonë to Theth trekking route.",
+    image: "/src/assets/images/city-shkoder.jpg",
+    position: { top: "13%", left: "68%" },
+    lat: 42.45333,
+    lon: 19.88778,
   },
 ];
 
@@ -208,5 +318,126 @@ export const CITY_DETAILS: Record<
       "Traditional guesthouses and local mountain cuisine",
     ],
     localTip: "Book mountain stays early in peak summer, especially if you're planning the Valbona-Theth trail.",
+  },
+  lezhe: {
+    tagline: "Historic crossroads by the coast",
+    intro:
+      "Lezhë combines heritage history with easy access to nearby beaches and the northern Riviera.",
+    highlights: [
+      "Skanderbeg memorial and castle views",
+      "Short drive to Shëngjin beach",
+      "Easy stop on north-south coastal drives",
+    ],
+    localTip: "Pair Lezhë with a sunset stop at Shëngjin for a relaxed day trip.",
+  },
+  shengjin: {
+    tagline: "Easy Adriatic escape",
+    intro:
+      "Shëngjin is known for long sandy beaches and casual seaside dining, perfect for a quick coastal break.",
+    highlights: [
+      "Beachfront promenade",
+      "Nearby Rana e Hedhun dunes",
+      "Fresh seafood with sunset views",
+    ],
+    localTip: "Go early in summer days to secure quieter beach spots.",
+  },
+  kruje: {
+    tagline: "Castle town above Tirana",
+    intro:
+      "Krujë delivers history, craft bazaars, and wide panoramas only a short drive from the capital.",
+    highlights: [
+      "Skanderbeg Museum and Krujë Castle",
+      "Old bazaar with handmade crafts",
+      "Panoramic mountain viewpoints",
+    ],
+    localTip: "Plan for cooler evenings; the hilltop can be breezy after sunset.",
+  },
+  elbasan: {
+    tagline: "Central gateway city",
+    intro:
+      "Elbasan sits at the heart of Albania's east-west routes and has a compact, walkable historic core.",
+    highlights: [
+      "Elbasan castle quarter",
+      "Short drives toward mountain villages",
+      "Convenient stop between Tirana and Korçë",
+    ],
+    localTip: "Grab lunch inside the old fortress district to break up longer drives.",
+  },
+  fier: {
+    tagline: "Southwest connector",
+    intro:
+      "Fier is a strategic stop for reaching the Riviera, Apollonia, or southern cultural routes.",
+    highlights: [
+      "Apollonia archaeological park nearby",
+      "Local markets and cafes",
+      "Easy routing toward Vlorë and Berat",
+    ],
+    localTip: "Use Fier as a short logistics stop instead of an overnight if you want more time on the coast.",
+  },
+  pogradec: {
+    tagline: "Lake Ohrid calm",
+    intro:
+      "Pogradec is a peaceful lakeside city with promenades, fresh fish, and relaxed summer energy.",
+    highlights: [
+      "Lake Ohrid shoreline walks",
+      "Village trips toward Lin",
+      "Sunset cafes by the water",
+    ],
+    localTip: "Stay overnight to enjoy the lake after day-trippers leave.",
+  },
+  himare: {
+    tagline: "Ionian beach classic",
+    intro:
+      "Himarë blends beaches, hillside villages, and calm coastal evenings along the Riviera.",
+    highlights: [
+      "Beach coves and turquoise water",
+      "Old town views",
+      "Access to coastal hiking routes",
+    ],
+    localTip: "Plan a morning swim before the midday beach crowds.",
+  },
+  sarande: {
+    tagline: "Southern seaside base",
+    intro:
+      "Sarandë is a lively base for southern Albania, with quick access to Ksamil, Butrint, and the Blue Eye spring.",
+    highlights: [
+      "Seaside promenade and port vibes",
+      "Day trips to Ksamil and Butrint",
+      "Golden-hour viewpoints across the bay",
+    ],
+    localTip: "Stay near the waterfront for walkable dining and boat-trip access.",
+  },
+  ksamil: {
+    tagline: "Turquoise island coves",
+    intro:
+      "Ksamil is known for clear water, beach clubs, and tiny islands just offshore.",
+    highlights: [
+      "Shallow turquoise bays",
+      "Short trips to Butrint",
+      "Sunset swims and island views",
+    ],
+    localTip: "Arrive early to secure beach loungers during July and August.",
+  },
+  theth: {
+    tagline: "Alpine village escape",
+    intro:
+      "Theth is a highland village surrounded by jagged peaks, waterfalls, and unforgettable hiking routes.",
+    highlights: [
+      "Theth waterfall and river pools",
+      "Stone church and tower houses",
+      "Trail access toward Valbonë",
+    ],
+    localTip: "Bring layers even in summer; mountain evenings are cool.",
+  },
+  valbona: {
+    tagline: "Valley of dramatic peaks",
+    intro:
+      "Valbonë Valley offers classic alpine scenery and one of Albania's most iconic trekking corridors.",
+    highlights: [
+      "Panoramic valley hikes",
+      "Traditional guesthouses",
+      "Start of the Valbonë-Theth trail",
+    ],
+    localTip: "Book a guesthouse with dinner included to simplify mountain logistics.",
   },
 };

@@ -41,6 +41,86 @@ const TRIP_SERVICES = [
   },
 ];
 
+const CITY_LOOKUP = new Map(CITIES.map((city) => [city.id, city]));
+
+const ROAD_OVERLAYS = [
+  {
+    id: "adriatic",
+    label: "Adriatic Coast",
+    cityIds: ["shengjin", "durres", "fier", "vlore"],
+    stroke: "rgba(148, 163, 184, 0.55)",
+    width: 0.35,
+    dash: "1.2 1.6",
+  },
+  {
+    id: "riviera",
+    label: "Riviera Route",
+    cityIds: ["vlore", "himare", "sarande", "ksamil"],
+    stroke: "rgba(59, 130, 246, 0.55)",
+    width: 0.4,
+    dash: "1.6 1.6",
+  },
+  {
+    id: "central",
+    label: "Central Spine",
+    cityIds: ["shkoder", "tirana", "elbasan", "korce", "pogradec"],
+    stroke: "rgba(148, 163, 184, 0.4)",
+    width: 0.3,
+    dash: "1.1 1.8",
+  },
+  {
+    id: "northern-alps",
+    label: "Northern Alps",
+    cityIds: ["shkoder", "theth", "valbona", "tropoje", "kukes"],
+    stroke: "rgba(244, 63, 94, 0.45)",
+    width: 0.32,
+    dash: "1.4 1.4",
+  },
+  {
+    id: "heritage-south",
+    label: "Heritage South",
+    cityIds: ["tirana", "berat", "gjirokaster", "sarande"],
+    stroke: "rgba(168, 85, 247, 0.45)",
+    width: 0.3,
+    dash: "1.2 1.8",
+  },
+] as const;
+
+const SCENIC_STOPS = [
+  {
+    id: "llogara-pass",
+    name: "Llogara Pass",
+    description: "High mountain pass with panoramic Ionian views.",
+    lat: 40.19861,
+    lon: 19.59167,
+    nearCityIds: ["vlore", "himare"],
+  },
+  {
+    id: "blue-eye",
+    name: "Blue Eye Spring",
+    description: "Crystal-blue freshwater spring near Sarandë.",
+    lat: 39.923611,
+    lon: 20.192778,
+    nearCityIds: ["sarande", "gjirokaster", "ksamil"],
+  },
+  {
+    id: "valbona-view",
+    name: "Valbonë Valley",
+    description: "Classic alpine valley views in the north.",
+    lat: 42.45333,
+    lon: 19.88778,
+    nearCityIds: ["valbona", "tropoje", "kukes", "theth"],
+  },
+  {
+    id: "ohrid-shore",
+    name: "Lake Ohrid Shore",
+    description: "Peaceful lakeside views at Pogradec.",
+    lat: 40.9,
+    lon: 20.65,
+    nearCityIds: ["pogradec", "korce"],
+  },
+] as const;
+
 const PAGE_CONTENT: Record<string, PageContent> = {
   "/for-albanians": {
     title: "For Albanians",
@@ -170,6 +250,15 @@ export default function HubPage() {
     () => CITIES.filter((city) => selectedCities.includes(city.id)),
     [selectedCities],
   );
+
+  const scenicStops = useMemo(() => {
+    if (!selectedCities.length) {
+      return SCENIC_STOPS;
+    }
+    return SCENIC_STOPS.filter((stop) =>
+      stop.nearCityIds.some((cityId) => selectedCities.includes(cityId)),
+    );
+  }, [selectedCities]);
 
   const toggleCity = (cityId: string) => {
     setSelectedCities((current) => {
@@ -314,6 +403,28 @@ export default function HubPage() {
                     stroke="rgba(255,255,255,0.35)"
                     strokeWidth="0.4"
                   />
+                  {ROAD_OVERLAYS.map((road) => {
+                    const points = road.cityIds
+                      .map((cityId) => CITY_LOOKUP.get(cityId))
+                      .filter((city): city is (typeof CITIES)[number] => Boolean(city))
+                      .map((city) => {
+                        const point = projectAlbaniaPoint(city.lat, city.lon);
+                        return `${point.x},${point.y}`;
+                      });
+                    if (points.length < 2) return null;
+                    return (
+                      <polyline
+                        key={road.id}
+                        points={points.join(" ")}
+                        fill="none"
+                        stroke={road.stroke}
+                        strokeWidth={road.width}
+                        strokeDasharray={road.dash}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    );
+                  })}
                   {routeLine.length > 1 && (
                     <polyline
                       points={routeLine.map((point) => `${point.x},${point.y}`).join(" ")}
@@ -324,6 +435,20 @@ export default function HubPage() {
                       strokeLinecap="round"
                     />
                   )}
+                  {scenicStops.map((stop) => {
+                    const point = projectAlbaniaPoint(stop.lat, stop.lon);
+                    return (
+                      <circle
+                        key={stop.id}
+                        cx={point.x}
+                        cy={point.y}
+                        r={0.9}
+                        fill="rgba(250, 204, 21, 0.9)"
+                        stroke="rgba(15, 23, 42, 0.6)"
+                        strokeWidth="0.3"
+                      />
+                    );
+                  })}
                   {CITIES.map((city) => {
                     const point = projectAlbaniaPoint(city.lat, city.lon);
                     const selected = selectedCities.includes(city.id);
@@ -403,26 +528,27 @@ export default function HubPage() {
                   </Card>
                 )}
 
-                {routeSummary?.steps?.length ? (
-                  <Card>
-                    <CardContent className="p-5 space-y-3 max-h-[320px] overflow-y-auto">
-                      <h3 className="text-lg font-semibold">Turn-by-Turn</h3>
-                      <ol className="space-y-2 text-sm">
-                        {routeSummary.steps.map((step, index) => (
-                          <li key={`${step.instruction}-${index}`} className="flex gap-3">
-                            <span className="text-xs text-muted-foreground w-8">{index + 1}.</span>
-                            <div className="flex-1">
-                              <p>{step.instruction}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatDistance(step.distance)} · {formatDuration(step.duration)}
-                              </p>
-                            </div>
-                          </li>
-                        ))}
-                      </ol>
-                    </CardContent>
-                  </Card>
-                ) : null}
+                <Card>
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Scenic Stop Points</h3>
+                      <span className="text-xs text-muted-foreground">
+                        {scenicStops.length} suggestions
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      These are worth a quick detour or a short break for views.
+                    </p>
+                    <div className="space-y-2">
+                      {scenicStops.map((stop) => (
+                        <div key={stop.id} className="rounded-lg border border-border/60 px-3 py-2 text-sm">
+                          <p className="font-medium">{stop.name}</p>
+                          <p className="text-xs text-muted-foreground">{stop.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </section>
