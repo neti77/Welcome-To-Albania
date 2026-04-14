@@ -8,7 +8,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEWSLETTER_ENCRYPTION_KEY=replace_with_a_long_random_secret
 ADMIN_DASHBOARD_TOKEN=choose_a_strong_private_token
 ```
-
+npr
 Then run:
 
 ```bash

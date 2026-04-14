@@ -56,7 +56,20 @@ const DEFAULT_NEWS_ITEMS: NewsItem[] = [
   },
 ];
 
+const GENERAL_THREAD: NewsItem = {
+  id: "general",
+  title: "General Chat",
+  description:
+    "No specific news needed. Share tips, ask questions, or talk about anything Albania.",
+  imageUrl: "/src/assets/images/header-tirana-new.jpg",
+};
+
 const NEWS_CACHE_KEY = "albania_news_cache";
+
+const withGeneralThread = (items: NewsItem[]) => [
+  GENERAL_THREAD,
+  ...items.filter((item) => item.id !== GENERAL_THREAD.id),
+];
 
 const getCachedNews = (): NewsItem[] => {
   if (typeof window === "undefined") return DEFAULT_NEWS_ITEMS;
@@ -71,9 +84,9 @@ const getCachedNews = (): NewsItem[] => {
 };
 
 export default function ThashethemeSquarePage() {
-  const [newsItems, setNewsItems] = useState<NewsItem[]>(() => getCachedNews());
+  const [newsItems, setNewsItems] = useState<NewsItem[]>(() => withGeneralThread(getCachedNews()));
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(
-    () => getCachedNews()[0] ?? null,
+    () => withGeneralThread(getCachedNews())[0] ?? GENERAL_THREAD,
   );
   const [comments, setComments] = useState<NewsComment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -120,20 +133,17 @@ export default function ThashethemeSquarePage() {
       const response = await fetch("/api/news");
       const data = await response.json();
       const items = Array.isArray(data?.items) ? (data.items as NewsItem[]) : [];
-      setNewsItems(items);
-      if (items.length) {
-        setSelectedNews((current) => {
-          const stillExists = current ? items.find((item) => item.id === current.id) : null;
-          return stillExists ?? items[0];
-        });
-      } else {
-        setSelectedNews(null);
-      }
+      const next = withGeneralThread(items);
+      setNewsItems(next);
+      setSelectedNews((current) => {
+        const stillExists = current ? next.find((item) => item.id === current.id) : null;
+        return stillExists ?? GENERAL_THREAD;
+      });
       if (typeof window !== "undefined") {
         window.localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(items));
       }
     } catch {
-      setNewsItems(DEFAULT_NEWS_ITEMS);
+      setNewsItems(withGeneralThread(DEFAULT_NEWS_ITEMS));
     }
   };
 
@@ -152,13 +162,11 @@ export default function ThashethemeSquarePage() {
   }, []);
 
   useEffect(() => {
-    const newsId = selectedNews?.id;
-    if (newsId) {
-      setComments([]);
-      setCommentsStatus("loading");
-      setReplyTarget(null);
-      void loadComments(newsId);
-    }
+    const newsId = selectedNews?.id ?? GENERAL_THREAD.id;
+    setComments([]);
+    setCommentsStatus("loading");
+    setReplyTarget(null);
+    void loadComments(newsId);
   }, [selectedNews?.id]);
 
   useEffect(() => {
@@ -176,7 +184,7 @@ export default function ThashethemeSquarePage() {
 
   useEffect(() => {
     const supabaseClient = supabase;
-    const newsId = selectedNews?.id;
+    const newsId = selectedNews?.id ?? GENERAL_THREAD.id;
     if (!supabaseClient || !newsId) return;
     const channel = supabaseClient
       .channel(`news-comments-${newsId}`)
@@ -231,10 +239,7 @@ export default function ThashethemeSquarePage() {
 
     const body = newComment.trim();
     if (!body) return;
-    if (!selectedNews?.id) {
-      setCommentMessage("No news selected yet.");
-      return;
-    }
+    const activeNewsId = selectedNews?.id ?? GENERAL_THREAD.id;
 
     setSubmittingComment(true);
     setCommentMessage("");
@@ -253,7 +258,7 @@ export default function ThashethemeSquarePage() {
         : null;
 
       const { error } = await supabase.from("news_comments").insert({
-        news_id: selectedNews.id,
+        news_id: activeNewsId,
         author_email: session.user.email,
         author_name: session.user.user_metadata?.display_name ?? null,
         reply_to_comment_id: replyTarget?.id ?? null,
@@ -272,7 +277,7 @@ export default function ThashethemeSquarePage() {
         }
 
         const retry = await supabase.from("news_comments").insert({
-          news_id: selectedNews.id,
+          news_id: activeNewsId,
           author_email: session.user.email,
           content: body,
         });
@@ -291,7 +296,7 @@ export default function ThashethemeSquarePage() {
           sender_email: session.user.email,
           sender_name: session.user.user_metadata?.display_name ?? null,
           context_type: "news",
-          context_id: selectedNews.id,
+          context_id: activeNewsId,
           message: body.slice(0, 160),
         });
       }
@@ -300,9 +305,7 @@ export default function ThashethemeSquarePage() {
       setCommentMessage("Comment posted.");
       setLastCommentAt(Date.now());
       setReplyTarget(null);
-      if (selectedNews?.id) {
-        await loadComments(selectedNews.id);
-      }
+      await loadComments(activeNewsId);
     } catch {
       setCommentMessage("Could not post comment.");
     } finally {
@@ -342,7 +345,7 @@ export default function ThashethemeSquarePage() {
                 Community-shared headlines and updates. Pick a thread to join the discussion.
               </p>
             </div>
-            {!newsItems.length && (
+            {newsItems.length <= 1 && (
               <p className="text-sm text-muted-foreground">
                 No published news yet. Check back soon.
               </p>
@@ -367,7 +370,9 @@ export default function ThashethemeSquarePage() {
                     decoding="async"
                   />
                   <CardContent className="p-5 space-y-2">
-                    <p className="text-xs uppercase tracking-wider text-primary">Thashetheme News</p>
+                    <p className="text-xs uppercase tracking-wider text-primary">
+                      {news.id === GENERAL_THREAD.id ? "Open Conversation" : "Thashetheme News"}
+                    </p>
                     <h3 className="text-xl font-semibold">{news.title}</h3>
                     <p className="text-sm text-muted-foreground">{news.description}</p>
                   </CardContent>

@@ -160,39 +160,9 @@ const PAGE_CONTENT: Record<string, PageContent> = {
   },
   "/for-visitors": {
     title: "For Visitors",
-    subtitle:
-      "A clean starting point for first-time travelers: entry basics, safety, logistics, and route planning.",
-    quickGuide: [
-      "First-timer sequence: Tirana -> heritage -> coast or Alps",
-      "How many days to allocate by region",
-      "What to expect with roads, timing, and transit",
-    ],
-    articles: [
-      {
-        title: "Albania Travel Advice",
-        excerpt:
-          "Current official guidance on safety, practicalities, and common travel considerations.",
-        url: "https://travel.state.gov/content/travel/en/international-travel/International-Travel-Country-Information-Pages/Albania.html",
-        source: "U.S. Department of State",
-        image: "/src/assets/images/city-tirana.jpg",
-      },
-      {
-        title: "IATA Travel Centre",
-        excerpt:
-          "Entry and transit requirement checks before departure.",
-        url: "https://www.iatatravelcentre.com/",
-        source: "IATA",
-        image: "/src/assets/images/header-tirana.jpg",
-      },
-      {
-        title: "OpenStreetMap Albania",
-        excerpt:
-          "A reliable map base to inspect roads, terrain, and route alternatives.",
-        url: "https://www.openstreetmap.org/relation/53292",
-        source: "OpenStreetMap",
-        image: "/src/assets/images/city-vlore.jpg",
-      },
-    ],
+    subtitle: "We will update this section soon.",
+    quickGuide: [],
+    articles: [],
   },
   "/plan-your-trip": {
     title: "Plan Your Trip",

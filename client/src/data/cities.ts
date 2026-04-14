@@ -211,6 +211,21 @@ export const CITIES: City[] = [
   },
 ];
 
+export const MAIN_CITY_IDS = [
+  "shkoder",
+  "tirana",
+  "durres",
+  "berat",
+  "vlore",
+  "gjirokaster",
+  "korce",
+  "sarande",
+  "kukes",
+  "theth",
+];
+
+export const MAIN_CITIES = CITIES.filter((city) => MAIN_CITY_IDS.includes(city.id));
+
 export const CITY_DETAILS: Record<
   string,
   {

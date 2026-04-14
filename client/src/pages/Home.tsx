@@ -4,7 +4,7 @@ import { ArrowDown, Sun, Compass, Camera, Landmark, Mountain } from "lucide-reac
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CITIES } from "@/data/cities";
+import { CITIES, MAIN_CITIES } from "@/data/cities";
 import { ALBANIA_MAP_PATH, projectAlbaniaPoint } from "@/data/albaniaMap";
 import { supabase } from "@/lib/supabase";
 
@@ -664,7 +664,7 @@ export default function Home() {
                     />
                   </svg>
 
-                  {CITIES.map((city, index) => {
+                  {MAIN_CITIES.map((city, index) => {
                     const projected = projectAlbaniaPoint(city.lat, city.lon);
                     const isSelected = selectedCity.id === city.id;
                     return (

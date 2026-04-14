@@ -15,7 +15,6 @@ import AdminLoginPage from "@/pages/AdminLoginPage";
 import LegalPage from "@/pages/LegalPage";
 import AboutPage from "@/pages/AboutPage";
 import ThashethemeSquarePage from "@/pages/ThashethemeSquarePage";
-import VisitorsGuidePage from "@/pages/VisitorsGuidePage";
 import ProfilePage from "@/pages/ProfilePage";
 
 function Router() {
@@ -25,9 +24,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/city/:id" component={CityDetails} />
       <Route path="/thashetheme-square" component={ThashethemeSquarePage} />
-      <Route path="/visitors-guide" component={VisitorsGuidePage} />
       <Route path="/for-albanians" component={ThashethemeSquarePage} />
-      <Route path="/for-visitors" component={VisitorsGuidePage} />
+      <Route path="/for-visitors" component={HubPage} />
       <Route path="/plan-your-trip" component={HubPage} />
       <Route path="/auth" component={AuthRoute} />
       <Route path="/sign-in" component={SignInPage} />
