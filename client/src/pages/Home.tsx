@@ -80,15 +80,15 @@ const DESTINATION_GRADIENTS = [
 ];
 
 const VINTAGE_GALLERY = [
-  "/src/assets/images/city-vlore.jpg",
-  "/src/assets/images/city-shkoder.jpg",
-  "/src/assets/images/city-berat.jpg",
+  "/public/images/city-vlore.jpg",
+  "/public/images/city-shkoder.jpg",
+  "/public/images/city-berat.jpg",
 ];
 
 const IN_VIEW = { once: true, amount: 0.25 } as const;
 const HERO_SLIDES = [
-  "/src/assets/images/Tirana.jpeg",
-  "/src/assets/images/city-berat.jpg",
+  "/public/images/Tirana.jpeg",
+  "/public/images/city-berat.jpg",
   "https://upload.wikimedia.org/wikipedia/commons/f/f8/The_City_and_the_Prokletije_from_the_castle.jpg",
 ];
 
@@ -742,7 +742,7 @@ export default function Home() {
                   loading="lazy"
                   decoding="async"
                   onError={(event) => {
-                    event.currentTarget.src = "/src/assets/images/Tirana.jpeg";
+                    event.currentTarget.src = "/public/images/Tirana.jpeg";
                   }}
                 />
                 <CardContent className="p-5">
