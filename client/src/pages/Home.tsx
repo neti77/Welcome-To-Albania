@@ -80,15 +80,15 @@ const DESTINATION_GRADIENTS = [
 ];
 
 const VINTAGE_GALLERY = [
-  "/public/images/city-vlore.jpg",
-  "/public/images/city-shkoder.jpg",
-  "/public/images/city-berat.jpg",
+  "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-vlore.jpg",
+  "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-shkoder.jpg",
+  "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-berat.jpg",
 ];
 
 const IN_VIEW = { once: true, amount: 0.25 } as const;
 const HERO_SLIDES = [
-  "/public/images/Tirana.jpeg",
-  "/public/images/city-berat.jpg",
+  "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/Tirana.jpeg",
+  "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-berat.jpg",
   "https://upload.wikimedia.org/wikipedia/commons/f/f8/The_City_and_the_Prokletije_from_the_castle.jpg",
 ];
 
@@ -742,7 +742,7 @@ export default function Home() {
                   loading="lazy"
                   decoding="async"
                   onError={(event) => {
-                    event.currentTarget.src = "/public/images/Tirana.jpeg";
+                    event.currentTarget.src = "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/Tirana.jpeg";
                   }}
                 />
                 <CardContent className="p-5">

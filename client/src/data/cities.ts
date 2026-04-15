@@ -24,7 +24,7 @@ export const CITIES: City[] = [
     name: "Tirana",
     description:
       "The vibrant capital city of Albania, known for its colorful architecture and lively atmosphere.",
-    image: "/public/images/Tirana.jpeg",
+    image: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/Tirana.jpeg",
     position: { top: "38%", left: "52%" },
     lat: 41.3275,
     lon: 19.8187,
@@ -34,7 +34,7 @@ export const CITIES: City[] = [
     name: "Berat",
     description:
       "Known as the 'City of a Thousand Windows', Berat is a UNESCO World Heritage site with a well-preserved Ottoman center.",
-    image: "/public/images/city-berat.jpg",
+    image: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-berat.jpg",
     position: { top: "58%", left: "54%" },
     lat: 40.7086,
     lon: 19.952,

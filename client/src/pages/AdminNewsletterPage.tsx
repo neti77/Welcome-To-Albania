@@ -586,7 +586,7 @@ export default function AdminNewsletterPage() {
                       loading="lazy"
                       decoding="async"
                       onError={(event) => {
-                        event.currentTarget.src = "/src/assets/images/city-tirana.jpg";
+                        event.currentTarget.src = "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-tirana.jpg";
                       }}
                     />
                     <div className="p-3 space-y-1">

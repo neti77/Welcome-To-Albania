@@ -50,21 +50,21 @@ const RESOURCES: Resource[] = [
     excerpt: "Official safety guidance and entry notes for U.S. travelers.",
     url: "https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories/albania-travel-advisory.html",
     source: "U.S. Department of State",
-    image: "/src/assets/images/city-tirana.jpg",
+    image: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-tirana.jpg",
   },
   {
     title: "UNESCO Albania Heritage",
     excerpt: "World Heritage entries to anchor culture-heavy itineraries.",
     url: "https://whc.unesco.org/en/statesparties/al",
     source: "UNESCO World Heritage Centre",
-    image: "/src/assets/images/city-berat.jpg",
+    image: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-berat.jpg",
   },
   {
     title: "Rome2Rio Trip Planner",
     excerpt: "Compare routes, transfers, and transport options between cities.",
     url: "https://www.rome2rio.com/",
     source: "Rome2Rio",
-    image: "/src/assets/images/city-vlore.jpg",
+    image: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-vlore.jpg",
   },
 ];
 

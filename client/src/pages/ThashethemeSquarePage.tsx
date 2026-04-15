@@ -31,28 +31,28 @@ const DEFAULT_NEWS_ITEMS: NewsItem[] = [
     title: "North Albania Trails Watch",
     description:
       "Locals are sharing updates on trail conditions, signage refreshes, and access notes for hikers.",
-    imageUrl: "/src/assets/images/city-shkoder.jpg",
+    imageUrl: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-shkoder.jpg",
   },
   {
     id: "coastal-renewal",
     title: "Riviera Weekender Pulse",
     description:
       "A rolling thread on beachfront cleanups, sunset spots, and quiet coves opening up.",
-    imageUrl: "/src/assets/images/city-vlore.jpg",
+    imageUrl: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-vlore.jpg",
   },
   {
     id: "heritage-events",
     title: "Heritage Night Walks",
     description:
       "Residents are highlighting evening openings, castle strolls, and guide-led tours.",
-    imageUrl: "/src/assets/images/city-berat.jpg",
+    imageUrl: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-berat.jpg",
   },
   {
     id: "capital-chatter",
     title: "Tirana City Chatter",
     description:
       "Fresh talk on new cafes, pop-up markets, and city events worth catching this week.",
-    imageUrl: "/src/assets/images/city-tirana.jpg",
+    imageUrl: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-tirana.jpg",
   },
 ];
 
