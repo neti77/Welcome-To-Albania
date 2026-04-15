@@ -28,32 +28,13 @@ type NewsComment = {
 const DEFAULT_NEWS_ITEMS: NewsItem[] = [
   {
     id: "north-alps",
-    title: "North Albania Trails Watch",
+    title: "Open chat",
     description:
-      "Locals are sharing updates on trail conditions, signage refreshes, and access notes for hikers.",
-    imageUrl: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-shkoder.jpg",
+      "Please keep the chat friendly and avoid sharing personal information. Message from Neti here, have a great day! ",
+    imageUrl: "https://eiti.org/sites/default/files/styles/full_height_hero_desktop/public/2022-03/Albania_shutterstock_1443788372.webp?itok=nCE2pmc2",
+    status: "published",
   },
-  {
-    id: "coastal-renewal",
-    title: "Riviera Weekender Pulse",
-    description:
-      "A rolling thread on beachfront cleanups, sunset spots, and quiet coves opening up.",
-    imageUrl: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-vlore.jpg",
-  },
-  {
-    id: "heritage-events",
-    title: "Heritage Night Walks",
-    description:
-      "Residents are highlighting evening openings, castle strolls, and guide-led tours.",
-    imageUrl: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-berat.jpg",
-  },
-  {
-    id: "capital-chatter",
-    title: "Tirana City Chatter",
-    description:
-      "Fresh talk on new cafes, pop-up markets, and city events worth catching this week.",
-    imageUrl: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/city-tirana.jpg",
-  },
+  
 ];
 
 const NEWS_CACHE_KEY = "albania_news_cache";
