@@ -24,7 +24,7 @@ export const CITIES: City[] = [
     name: "Tirana",
     description:
       "The vibrant capital city of Albania, known for its colorful architecture and lively atmosphere.",
-    image: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/Tirana.jpeg",
+    image: "https://zb3s1vzcpngfepj6.public.blob.vercel-storage.com/Tirana.webp",
     position: { top: "38%", left: "52%" },
     lat: 41.3275,
     lon: 19.8187,
